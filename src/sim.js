@@ -9,6 +9,7 @@ const RAFT_MASS = 2.2, TILT_MASS = 1.25;
 const FART_F = 11, DRAG = 0.9, TORQUE_K = 0.45;
 const TURN_SPEED = 2.5;         // kenarda dönme hızı (rad/sn)
 const SLIP_TILT = 0.8;          // sal bu kadar yatınca alçak taraftakiler kayar
+const BOT_LEAN = 0.4, BOT_REACT = 0.5; // botlar sal bu kadar yatık ve bu kadar sn kalınca yer değiştirir
 const MAX_HP = 3;
 // Yerel açı a: konum (cos a, sin a)·R. Yerel ileri (0,-1) → a = -π/2, arka (0,1) → a = π/2.
 const BACK = Math.PI / 2;
@@ -49,7 +50,7 @@ export class Sim {
     const n = this.players.length;
     this.players.forEach((pl, i) => {
       pl.ang = BACK + (n > 1 ? (i - (n - 1) / 2) * (Math.PI * 2 / n) : 0);
-      pl.av = 0; pl.slip = 0; pl.onRaft = true; pl.charge = 0; pl.gasOn = false; pl.meter = 1; pl.dizzy = 0;
+      pl.av = 0; pl.slip = 0; pl.onRaft = true; pl.botSpot = null; pl.charge = 0; pl.gasOn = false; pl.meter = 1; pl.dizzy = 0;
       this.placeOnRim(pl);
     });
   }
@@ -414,9 +415,17 @@ export class Sim {
       const free = bots.filter((q) => q !== pusher), k = free.indexOf(p), nb = free.length;
       const base = Math.hypot(sx, sz) < 0.2 ? BACK + Math.PI / nb : Math.atan2(-sz, -sx);
       const spread = nb > 1 ? Math.min(1.4, (Math.PI * 1.6) / nb) : 0;
-      target = base + (k - (nb - 1) / 2) * spread;
-      if (Math.hypot(sx, sz) < 0.2 && nb > 1) target = BACK + (k / nb) * Math.PI * 2;
+      let ideal = base + (k - (nb - 1) / 2) * spread;
+      if (Math.hypot(sx, sz) < 0.2 && nb > 1) ideal = BACK + (k / nb) * Math.PI * 2;
+      // Oyuncu kaydıkça peşinden kaçmasın: yerini korur, ancak sal bir süre belirgin
+      // yatık kalırsa (ya da yeni itici bıraktıysa) yeni denge yerine geçer.
+      const lean = Math.hypot(r.tx, r.tz);
+      if (lean > BOT_LEAN) { if (p.botLeanT == null) p.botLeanT = this.time; } else p.botLeanT = null;
+      const leaning = p.botLeanT != null && this.time - p.botLeanT > BOT_REACT;
+      if (p.botSpot == null || p.botWasPusher || leaning) p.botSpot = ideal;
+      target = p.botSpot;
     }
+    p.botWasPusher = p === pusher;
     const diff = angDiff(p.ang, target);
     const turn = Math.abs(diff) < 0.08 ? 0 : clamp(diff * 2.2, -1, 1);
     // Gaz: bot itiş yönüne uygun yerdeyse
