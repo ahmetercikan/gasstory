@@ -1,0 +1,3 @@
+{ "name": "Gas Story", "short_name": "Gas Story", "lang": "tr", "display": "fullscreen", "orientation": "portrait",
+  "start_url": "./", "scope": "./", "background_color": "#a8dcff", "theme_color": "#2b9bf0",
+  "icons": [{ "src": "icon.svg", "sizes": "any", "type": "image/svg+xml" }] }

@@ -1,0 +1,150 @@
+<!doctype html>
+<html lang="tr">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no, viewport-fit=cover" />
+  <meta name="theme-color" content="#2b9bf0" />
+  <title>Gas Story</title>
+  <link rel="icon" href="./icon.svg" type="image/svg+xml" />
+  <link rel="manifest" href="./manifest.webmanifest" />
+  <link rel="stylesheet" href="./src/style.css" />
+</head>
+<body>
+  <canvas id="c"></canvas>
+  <div id="tags"></div>
+  <div id="floaters"></div>
+
+  <!-- OYUN İÇİ -->
+  <div id="hud" class="hidden">
+    <div class="hud-top">
+      <div class="pill" id="hHearts"></div>
+      <div class="pill mono" id="hTime">0:00</div>
+      <div class="pill" id="hStars">⭐ 0/0</div>
+      <button class="pill icon" id="pauseBtn" aria-label="Duraklat">⏸</button>
+    </div>
+    <div id="progress"><div id="progFill"></div><div id="progCps"></div><div id="progRaft">🛟</div><div id="progFlag">🏁</div></div>
+    <div id="team"></div>
+    <div id="tiltGauge"><div class="warn"></div><div id="tiltDot"></div><span>DENGE</span></div>
+    <div id="banner"></div>
+    <div id="hint"></div>
+    <div id="joyZone"><div id="joyBase"><div id="joyKnob"></div></div><div class="joyHelp">Sürükle: salın üstünde yürü</div></div>
+    <button id="gasBtn" aria-label="Gaz">
+      <svg viewBox="0 0 100 100"><circle cx="50" cy="50" r="45" class="track" /><circle cx="50" cy="50" r="45" class="fill" id="gasRing" /></svg>
+      <span id="gasEmoji">💨</span><b id="gasLabel">OSUR</b>
+    </button>
+  </div>
+
+  <!-- ANA MENÜ -->
+  <div id="menu" class="screen">
+    <div class="menu-inner">
+      <div class="logo">
+        <div class="logo-top">GAS</div>
+        <div class="logo-bot">STORY</div>
+        <div class="logo-sub">💨 Pırrt! Böğğ! Dostluk bozan rafting macerası 🫧</div>
+      </div>
+      <div class="card">
+        <label class="lbl">Adın</label>
+        <input id="nameIn" maxlength="12" placeholder="Adını yaz" autocomplete="off" />
+        <label class="lbl">Karakterin</label>
+        <div id="charPick" class="char-pick"></div>
+        <label class="lbl">Süper gücün</label>
+        <div id="powPick" class="pow-pick"></div>
+        <div id="powDesc" class="pow-desc"></div>
+      </div>
+      <button class="btn big primary" id="soloBtn">🛟 Tek Başına Oyna <small>botlarla</small></button>
+      <div class="row">
+        <button class="btn" id="hostBtn">📡 Oda Kur</button>
+        <button class="btn" id="joinOpen">🔑 Odaya Katıl</button>
+      </div>
+      <div id="joinBox" class="card hidden">
+        <label class="lbl">Arkadaşının oda kodu</label>
+        <div class="row">
+          <input id="codeIn" maxlength="4" placeholder="ABCD" autocomplete="off" autocapitalize="characters" class="code-in" />
+          <button class="btn primary" id="joinBtn">Katıl</button>
+        </div>
+      </div>
+      <div class="row small">
+        <button class="btn ghost" id="howBtn">❓ Nasıl Oynanır</button>
+        <button class="btn ghost" id="sndBtn">🔊</button>
+        <button class="btn ghost" id="musBtn">🎵</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- LOBİ -->
+  <div id="lobby" class="screen hidden">
+    <div class="menu-inner">
+      <div class="lobby-head">
+        <button class="btn ghost icon" id="lobbyBack">←</button>
+        <div id="roomBox">
+          <div class="lbl" id="roomLbl">ODA KODU</div>
+          <div id="roomCode">----</div>
+        </div>
+        <button class="btn ghost icon" id="shareBtn">📤</button>
+      </div>
+      <div id="roomHelp" class="muted center"></div>
+      <div id="roster"></div>
+      <div id="levelBox">
+        <div class="lbl">Bölüm</div>
+        <div id="levels"></div>
+      </div>
+      <button class="btn big primary" id="startBtn">🚀 BAŞLA</button>
+      <div id="waitHost" class="muted center hidden">Oda kurucusu oyunu başlatınca başlayacak…</div>
+    </div>
+  </div>
+
+  <!-- SONUÇ -->
+  <div id="results" class="screen hidden">
+    <div class="menu-inner">
+      <div id="resTitle" class="res-title">BİTİŞ! 🏁</div>
+      <div id="resMedal" class="res-medal">🥇</div>
+      <div id="resStats" class="card stats"></div>
+      <div id="resAwards" class="awards"></div>
+      <div id="resBtns">
+        <button class="btn big primary" id="nextBtn">Sonraki Bölüm ➜</button>
+        <div class="row">
+          <button class="btn" id="againBtn">🔁 Tekrar</button>
+          <button class="btn" id="toLobbyBtn">👥 Lobi</button>
+        </div>
+      </div>
+      <div id="resWait" class="muted center hidden">Oda kurucusunun seçimi bekleniyor…</div>
+    </div>
+  </div>
+
+  <!-- DURAKLAT -->
+  <div id="pause" class="screen hidden dim">
+    <div class="menu-inner narrow">
+      <div class="res-title">Mola 🧻</div>
+      <button class="btn big primary" id="resumeBtn">▶ Devam</button>
+      <button class="btn" id="restartBtn">🔁 Baştan</button>
+      <button class="btn" id="quitBtn">🏠 Lobiye Dön</button>
+      <div class="row small">
+        <button class="btn ghost" id="sndBtn2">🔊</button>
+        <button class="btn ghost" id="musBtn2">🎵</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- NASIL OYNANIR -->
+  <div id="howto" class="screen hidden dim">
+    <div class="menu-inner narrow">
+      <div class="res-title">Nasıl Oynanır?</div>
+      <div class="card how">
+        <p>🛟 Hepiniz aynı şişme saldasınız. Amaç: nehrin sonundaki <b>🏁 bitişe</b> salı patlatmadan ulaşmak.</p>
+        <p>🕹️ <b>Sol tarafa dokunup sürükle</b>: salın üstünde yürü. <b>Sağdaki büyük düğme</b>: gaz!</p>
+        <p>💨 <b>Osuran</b>: basılı tutunca sürekli iter. Sal, <b>baktığın yöne</b> gider.</p>
+        <p>🫧 <b>Geğiren</b>: basılı tut, şişir, bırak! Dev bir patlama salı <b>arkana</b> fırlatır. Önündeki arkadaşını da uçurur 😈</p>
+        <p>⚖️ <b>Denge</b>: herkes bir kenara toplanırsa sal yatar, kayıp suya düşersiniz. Çok yatarsa sal <b>devrilir</b>!</p>
+        <p>🌵 Dikenler salı deler (3 can). Kayalar sektirir, girdaplar döndürür.</p>
+        <p>🥫 Fasulye osuranları, 🥤 gazoz geğirenleri süper yapar. ⭐ yıldızları topla!</p>
+        <p>🏊 Suya düşersen yüzerek sala dön; yetişemezsen arkadaşların seni çeker.</p>
+      </div>
+      <button class="btn big primary" id="howClose">Anladım!</button>
+    </div>
+  </div>
+
+  <div id="toast"></div>
+  <div id="loading"><div class="spin">💨</div></div>
+  <script type="module" src="./src/main.js"></script>
+</body>
+</html>

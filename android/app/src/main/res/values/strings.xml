@@ -1,0 +1,7 @@
+<?xml version='1.0' encoding='utf-8'?>
+<resources>
+    <string name="app_name">Gas Story</string>
+    <string name="title_activity_main">Gas Story</string>
+    <string name="package_name">com.ahmetercikan.gasstory</string>
+    <string name="custom_url_scheme">com.ahmetercikan.gasstory</string>
+</resources>
