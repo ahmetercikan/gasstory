@@ -18,13 +18,16 @@ async function render(file, width, height, out) {
   await page.screenshot({ path: out });
   await page.close();
 }
-await render('panorama.html', 3240, 1920, `${OUT}/panorama.png`);
-for (let i = 0; i < 3; i++) {
-  await sharp(`${OUT}/panorama.png`).extract({ left: i * 1080, top: 0, width: 1080, height: 1920 }).png({ compressionLevel: 9 }).toFile(`${OUT}/ekran-${i + 1}.png`);
-  console.log('✓ ekran', i + 1);
+for (const lang of ['tr', 'en']) {
+  const dir = `${OUT}/${lang}`;
+  mkdirSync(dir, { recursive: true });
+  await render(`panorama.html?lang=${lang}&shot=/store/raw/${lang}/2-osurma.png`, 3240, 1920, `${dir}/panorama.png`);
+  for (let i = 0; i < 3; i++) {
+    await sharp(`${dir}/panorama.png`).extract({ left: i * 1080, top: 0, width: 1080, height: 1920 }).png({ compressionLevel: 9 }).toFile(`${dir}/ekran-${i + 1}.png`);
+  }
+  await render(`feature.html?lang=${lang}`, 1024, 500, `${dir}/tanitim-1024x500.png`);
+  console.log('✓', lang);
 }
-await render('feature.html', 1024, 500, `${OUT}/tanitim-1024x500.png`);
-console.log('✓ tanıtım görseli');
 await sharp('assets/icon.png').resize(512, 512).png().toFile(`${OUT}/simge-512.png`);
 console.log('✓ simge 512');
 await browser.close();

@@ -37,10 +37,13 @@
 
   /* 3. ekran */
   .card { left: 2290px; width: 850px; height: 260px; border-radius: 44px; background: rgba(255,255,255,.62); border: 3px solid rgba(255,255,255,.95); box-shadow: 0 24px 50px rgba(20,60,110,.16), inset 0 2px 0 #fff; backdrop-filter: blur(10px); display: flex; align-items: center; gap: 40px; padding: 0 44px; box-sizing: border-box; }
-  .icw { flex: 0 0 140px; height: 140px; border-radius: 50%; background: #fff; box-shadow: 0 0 0 6px #d6ecff, 0 8px 18px rgba(20,60,110,.15); display: flex; align-items: center; justify-content: center; }
-  .icw svg { width: 92px; height: 92px; }
+  .icw { flex: 0 0 auto; font-size: 66px; display: flex; } .icw .tile { box-shadow: inset 0 -6px 0 rgba(0,0,0,.14), 0 10px 20px rgba(20,60,110,.18); }
+  .icw svg { stroke-width: 2.4; }
   .card h3 { margin: 0; font-size: 60px; font-weight: 800; line-height: 1.05; }
   .card p { margin: 6px 0 0; font-size: 38px; line-height: 1.25; color: var(--soft); font-weight: 500; }
+  .ic { width: 1.2em; height: 1.2em; }
+  .tile { --tc: #3d8bfd; display: inline-grid; place-items: center; width: 2.1em; height: 2.1em; border-radius: 0.62em; background: var(--tc); color: #fff; }
+  .tile .ic { width: 58%; height: 58%; }
   .dash { height: 0; border-top: 7px dashed var(--accent); opacity: .85; }
   .dot { width: 34px; height: 34px; border-radius: 50%; background: var(--accent); box-shadow: 0 0 0 10px rgba(43,143,224,.22); }
 </style></head>
@@ -74,16 +77,34 @@
 
   <div class="abs card" style="top:660px">
     <div class="icw" data-i="fart"></div>
-    <div><h3>Osur ya da Geğir</h3><p>Osuran baktığı yöne iter, geğiren salı geriye fırlatır.</p></div>
+    <div><h3>Osur ya da Geğir</h3><p>Gaz, salı durduğun taraftan karşı tarafa iter.</p></div>
   </div>
   <div class="abs card" style="top:980px">
     <div class="icw" data-i="balance"></div>
     <div><h3>Dengede Kalın</h3><p>Herkes bir kenara toplanırsa sal yatar, devrilirsiniz!</p></div>
   </div>
   <div class="abs card" style="top:1300px">
-    <div class="icw" data-i="people"></div>
-    <div><h3>4 Kişi Online</h3><p>Oda kur, kodu paylaş, arkadaşlarınla aynı salda buluş.</p></div>
+    <div class="icw" data-i="globe"></div>
+    <div><h3>Online Oyna</h3><p>Hızlı eşleş ya da arkadaşlarını davet et, aynı salda buluşun.</p></div>
   </div>
-  <script type="module">import { ic } from '/src/icons.js'; document.querySelectorAll('[data-i]').forEach((el) => (el.innerHTML = ic(el.dataset.i)));</script>
+  <script type="module">import { tile } from '/src/icons.js';
+const COL = { fart: 'green', balance: 'purple', people: 'teal', globe: 'teal' };
+document.querySelectorAll('[data-i]').forEach((el) => (el.innerHTML = tile(el.dataset.i, COL[el.dataset.i])));
+const EN = {
+  'Dostluk Bozan Co-op Rafting': 'Friendship-Ruining Co-op Rafting',
+  'Gazla': 'Gas', 'Yol Al!': 'Power!',
+  'Arkadaşlarınla aynı salda; osurarak, geğirerek nehri fethedin.': 'Share one raft with friends and conquer the river by farting and burping.',
+  'Osur ya da Geğir': 'Fart or Burp', 'Gaz, salı durduğun taraftan karşı tarafa iter.': 'Gas pushes the raft away from the side you stand on.',
+  'Dengede Kalın': 'Stay Balanced', 'Herkes bir kenara toplanırsa sal yatar, devrilirsiniz!': 'Crowd one side and the raft tips over!',
+  'Online Oyna': 'Play Online', 'Hızlı eşleş ya da arkadaşlarını davet et, aynı salda buluşun.': 'Quick match or invite friends to your raft.',
+};
+const qs = new URLSearchParams(location.search);
+if (qs.get('lang') === 'en') {
+  document.documentElement.lang = 'en';
+  const w = document.createTreeWalker(document.body, NodeFilter.SHOW_TEXT);
+  const ns = []; while (w.nextNode()) ns.push(w.currentNode);
+  for (const n of ns) { const k = n.nodeValue.trim(); if (EN[k]) n.nodeValue = n.nodeValue.replace(k, EN[k]); }
+}
+if (qs.get('shot')) document.querySelector('#phone img').src = qs.get('shot');</script>
   <script>document.fonts.ready.then(() => Promise.all([...document.images].map((i) => i.decode().catch(() => {})))).then(() => setTimeout(() => (window.done = true), 400));</script>
 </body></html>

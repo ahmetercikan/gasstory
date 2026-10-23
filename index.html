@@ -27,7 +27,7 @@
     <div id="tiltGauge"><div class="warn"></div><div id="tiltDot"></div><span>DENGE</span></div>
     <div id="banner"></div>
     <div id="hint"></div>
-    <div id="joyZone"><div id="joyBase"><div id="joyKnob"></div></div><div class="joyHelp">Sürükle: salın üstünde yürü</div></div>
+    <div id="joyZone"><div id="joyBase"><i data-ic="left" class="ar l"></i><div id="joyKnob"></div><i data-ic="right" class="ar r"></i></div><div class="joyHelp">Parmağını sağa sola kaydır: salın kenarında dön</div></div>
     <button id="gasBtn" aria-label="Gaz">
       <svg viewBox="0 0 100 100"><circle cx="50" cy="50" r="45" class="track" /><circle cx="50" cy="50" r="45" class="fill" id="gasRing" /></svg>
       <span id="gasEmoji"><i data-ic="fart"></i></span><b id="gasLabel">OSUR</b>
@@ -51,11 +51,13 @@
         <div id="powPick" class="pow-pick"></div>
         <div id="powDesc" class="pow-desc"></div>
       </div>
-      <button class="btn big primary" id="soloBtn"><span><i data-ic="buoy"></i> Tek Başına Oyna</span><small>botlarla</small></button>
+      <button class="btn big primary" id="soloBtn"><span><i data-ic="buoy" class="tile orange"></i> Tek Başına Oyna</span><small>botlarla</small></button>
+      <button class="btn big online" id="quickBtn"><span><i data-ic="globe" class="tile teal"></i> Hızlı Eşleş</span><small>online oyunculara katıl</small></button>
       <div class="row">
-        <button class="btn" id="hostBtn"><span><i data-ic="online"></i> Oda Kur</span></button>
-        <button class="btn" id="joinOpen"><span><i data-ic="key"></i> Odaya Katıl</span></button>
+        <button class="btn" id="hostBtn"><span><i data-ic="online" class="tile blue"></i> Oda Kur</span></button>
+        <button class="btn" id="joinOpen"><span><i data-ic="key" class="tile purple"></i> Odaya Katıl</span></button>
       </div>
+      <button class="btn" id="friendsBtn"><span><i data-ic="people" class="tile pink"></i> Arkadaşlar <b id="friendsBadge" class="badge hidden">0</b></span></button>
       <div id="joinBox" class="card hidden">
         <label class="lbl">Arkadaşının oda kodu</label>
         <div class="row">
@@ -67,6 +69,7 @@
         <button class="btn ghost" id="howBtn"><span><i data-ic="help"></i> Nasıl Oynanır</span></button>
         <button class="btn ghost" id="sndBtn"><i data-ic="sound"></i></button>
         <button class="btn ghost" id="musBtn"><i data-ic="music"></i></button>
+        <button class="btn ghost notr" id="langBtn"><i data-ic="globe"></i> <b id="langLbl">EN</b></button>
       </div>
     </div>
   </div>
@@ -84,11 +87,12 @@
       </div>
       <div id="roomHelp" class="muted center"></div>
       <div id="roster"></div>
+      <div id="lobbyFriends" class="card hidden"></div>
       <div id="levelBox">
         <div class="lbl">Bölüm</div>
         <div id="levels"></div>
       </div>
-      <button class="btn big primary" id="startBtn"><span><i data-ic="rocket"></i> BAŞLA</span></button>
+      <button class="btn big primary" id="startBtn"><span><i data-ic="rocket" class="tile orange"></i> BAŞLA</span></button>
       <div id="waitHost" class="muted center hidden">Oda kurucusu oyunu başlatınca başlayacak…</div>
     </div>
   </div>
@@ -97,7 +101,7 @@
   <div id="results" class="screen hidden">
     <div class="menu-inner">
       <div id="resTitle" class="res-title">BİTİŞ!</div>
-      <div id="resMedal" class="res-medal"><i data-ic="gold"></i></div>
+      <div id="resMedal" class="res-medal"></div>
       <div id="resStats" class="card stats"></div>
       <div id="resAwards" class="awards"></div>
       <div id="resBtns">
@@ -130,19 +134,42 @@
     <div class="menu-inner narrow">
       <div class="res-title">Nasıl Oynanır?</div>
       <div class="card how">
-        <p><i data-ic="buoy"></i> Hepiniz aynı şişme saldasınız. Amaç: nehrin sonundaki <b>bitişe</b> salı patlatmadan ulaşmak.</p>
-        <p><i data-ic="joystick"></i> <b>Sol tarafa dokunup sürükle</b>: salın üstünde yürü. <b>Sağdaki büyük düğme</b>: gaz!</p>
-        <p><i data-ic="fart"></i> <b>Osuran</b>: basılı tutunca sürekli iter. Sal, <b>baktığın yöne</b> gider.</p>
-        <p><i data-ic="burp"></i> <b>Geğiren</b>: basılı tut, şişir, bırak! Dev bir patlama salı <b>arkana</b> fırlatır. Önündeki arkadaşını da uçurur!</p>
-        <p><i data-ic="balance"></i> <b>Denge</b>: herkes bir kenara toplanırsa sal yatar, kayıp suya düşersiniz. Çok yatarsa sal <b>devrilir</b>!</p>
-        <p><i data-ic="spikes"></i> Dikenler salı deler (3 can). Kayalar sektirir, girdaplar döndürür.</p>
-        <p><i data-ic="bean"></i> Fasulye osuranları, gazoz geğirenleri süper yapar. Yıldızları topla!</p>
-        <p><i data-ic="water"></i> Suya düşersen yüzerek sala dön; yetişemezsen arkadaşların seni çeker.</p>
+        <p data-th="how1"><i data-ic="buoy" class="tile"></i> Hepiniz aynı şişme saldasınız. Amaç: nehrin sonundaki <b>bitişe</b> salı patlatmadan ulaşmak.</p>
+        <p data-th="how2"><i data-ic="joystick" class="tile"></i> Herkes salın <b>kenarında</b> durur. <b>Sol tarafta parmağını sağa sola kaydır</b>: karakterin kenar boyunca o yöne döner. <b>Sağdaki büyük düğme</b>: gaz!</p>
+        <p data-th="how3"><i data-ic="fart" class="tile"></i> <b>Osuran</b>: basılı tutunca sürekli iter. Gaz salı, durduğun taraftan <b>karşı tarafa</b> doğru iter.</p>
+        <p data-th="how4"><i data-ic="burp" class="tile"></i> <b>Geğiren</b>: basılı tut, şişir, bırak! Dev bir patlamayla salı karşı tarafa fırlatır, yanındakileri de savurur!</p>
+        <p data-th="how5"><i data-ic="globe" class="tile"></i> <b>Hızlı Eşleş</b> ile online oyunculara katıl, <b>Arkadaşlar</b>'dan kodunla arkadaş ekle ve odana çağır.</p>
+        <p data-th="how6"><i data-ic="balance" class="tile"></i> <b>Denge</b>: herkes bir kenara toplanırsa sal yatar, kayıp suya düşersiniz. Çok yatarsa sal <b>devrilir</b>!</p>
+        <p data-th="how7"><i data-ic="spikes" class="tile"></i> Dikenler salı deler (3 can). Kayalar sektirir, girdaplar döndürür.</p>
+        <p data-th="how8"><i data-ic="bean" class="tile"></i> Fasulye osuranları, gazoz geğirenleri süper yapar. Yıldızları topla!</p>
+        <p data-th="how9"><i data-ic="water" class="tile"></i> Suya düşersen yüzerek sala dön; yetişemezsen arkadaşların seni çeker.</p>
       </div>
       <button class="btn big primary" id="howClose">Anladım!</button>
     </div>
   </div>
 
+  <!-- ARKADAŞLAR -->
+  <div id="friends" class="screen hidden">
+    <div class="menu-inner" id="frBox">
+      <div class="lobby-head">
+        <button class="btn ghost icon" id="frBack"><i data-ic="back"></i></button>
+        <div id="roomBox"><div class="lbl">ARKADAŞ KODUN</div><div id="frCode">······</div></div>
+        <button class="btn ghost icon" id="frCopy"><i data-ic="share"></i></button>
+      </div>
+      <div class="card">
+        <label class="lbl">Arkadaşının kodunu yaz</label>
+        <div class="row">
+          <input id="frAddIn" maxlength="6" placeholder="ABC123" autocomplete="off" autocapitalize="characters" class="code-in" />
+          <button class="btn primary" id="frAddBtn"><span><i data-ic="addFriend"></i> Ekle</span></button>
+        </div>
+      </div>
+      <div id="frReqs" class="card list"></div>
+      <div class="card list"><div class="lbl">Arkadaşların</div><div id="frList"></div></div>
+      <button class="btn ghost small-text" id="frDelete"><span><i data-ic="trash"></i> Online verilerimi sil</span></button>
+    </div>
+  </div>
+
+  <div id="inviteBox" class="hidden"><i data-ic="mail" class="tile blue"></i><span class="txt"></span><button class="pill-btn ok" id="invYes">Katıl</button><button class="pill-btn no" id="invNo"><i data-ic="close"></i></button></div>
   <div id="toast"></div>
   <div id="loading"><div class="spin"><img src="./img/char-frog.png" alt=""></div></div>
   <script type="module" src="./src/main.js"></script>

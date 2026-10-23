@@ -5,7 +5,8 @@ import { chromium } from 'playwright-core';
 import { mkdirSync } from 'node:fs';
 
 const URL = 'http://localhost:5310/';
-const OUT = 'store/raw';
+const LANG = process.argv[2] || 'tr';
+const OUT = `store/raw/${LANG}`;
 mkdirSync(OUT, { recursive: true });
 const sleep = (ms) => new Promise((r) => setTimeout(r, ms));
 const browser = await chromium.launch({
@@ -18,7 +19,7 @@ async function open(profile, view = { width: 405, height: 720, deviceScaleFactor
   const ctx = await browser.newContext({ viewport: { width: view.width, height: view.height }, deviceScaleFactor: view.deviceScaleFactor });
   const page = await ctx.newPage();
   page.on('pageerror', (e) => console.error('sayfa hatası:', e.message));
-  await page.addInitScript((p) => { localStorage.clear(); localStorage.setItem('gasstory-profile', JSON.stringify(p)); localStorage.setItem('gasstory-muted', 'true'); }, profile);
+  await page.addInitScript((p) => { localStorage.clear(); localStorage.setItem('gasstory-profile', JSON.stringify(p)); localStorage.setItem('gasstory-muted', 'true'); localStorage.setItem('gasstory-lang', JSON.stringify(p.lang)); }, { ...profile, lang: LANG });
   await page.goto(URL);
   await sleep(2500);
   return page;

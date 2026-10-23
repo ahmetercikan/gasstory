@@ -171,38 +171,79 @@ input { font: inherit; user-select: text; -webkit-user-select: text; }
   #joyZone .joyHelp::after { content: ' · Klavye: WASD + Boşluk'; }
 }
 
-/* --- Oyunun kendi simgeleri (src/icons.js) ve karakter portreleri */
-.ic { width: 1.25em; height: 1.25em; vertical-align: -0.28em; flex: none; overflow: visible; }
-.btn > span { display: inline-flex; align-items: center; gap: 8px; }
-.btn.icon .ic { width: 28px; height: 28px; }
-.row.small .btn .ic { width: 26px; height: 26px; }
+/* --- Simgeler (Çizio dili: lucide çizgi simgeleri + renkli karolar) */
+.ic { width: 1.2em; height: 1.2em; vertical-align: -0.24em; flex: none; }
+.tile { --tc: #3d8bfd; display: inline-grid; place-items: center; width: 2.1em; height: 2.1em; border-radius: 0.62em; background: var(--tc); color: #fff; flex: none; box-shadow: inset 0 -3px 0 rgba(0, 0, 0, 0.14); vertical-align: middle; }
+.tile .ic { width: 58%; height: 58%; vertical-align: 0; }
+.tile.big { width: 120px; height: 120px; border-radius: 36px; box-shadow: inset 0 -8px 0 rgba(0, 0, 0, 0.15), 0 10px 24px rgba(20, 40, 80, 0.25); }
+.btn > span { display: inline-flex; align-items: center; gap: 10px; }
+.btn .tile { font-size: 15px; }
+.btn.big .tile { font-size: 17px; }
+.btn.icon .ic { width: 26px; height: 26px; }
+.row.small .btn .ic { width: 24px; height: 24px; }
+.btn.online { background: linear-gradient(#5ee0cf, #14b8a6); color: #053b35; }
+.btn.online .tile { background: #fff; color: #14b8a6; }
+.btn.busy { opacity: 0.6; pointer-events: none; }
+.btn.small-text { font-size: 14px; padding: 8px; background: rgba(255, 255, 255, 0.55); color: #8b1e1e; }
+.badge { background: #ef4444; color: #fff; border-radius: 10px; font-size: 13px; padding: 0 7px; line-height: 20px; }
 .char-pick button { font-size: 0; padding: 6px 0 4px; }
-.char-pick .cp { width: 64px; height: 64px; object-fit: contain; display: block; margin: 0 auto; filter: drop-shadow(0 3px 0 rgba(20,40,80,.15)); }
+.char-pick .cp { width: 64px; height: 64px; object-fit: contain; display: block; margin: 0 auto; filter: drop-shadow(0 3px 0 rgba(20, 40, 80, 0.15)); }
 .char-pick button span { font-size: 12px; }
-.pow-pick button { display: flex; align-items: center; justify-content: center; gap: 8px; }
-.pow-pick .ic { width: 30px; height: 30px; }
-.slot img.em { width: 48px; height: 48px; object-fit: contain; }
-.slot .pw .ic { width: 30px; height: 30px; }
+.pow-pick button { display: flex; align-items: center; justify-content: center; gap: 10px; }
+.pow-pick .tile { font-size: 14px; }
+.slot img.em, .fr img.em { width: 48px; height: 48px; object-fit: contain; }
+.slot .pw .tile { font-size: 14px; }
 .slot .x { display: flex; align-items: center; padding: 6px 8px; }
 .slot .x .ic { width: 18px; height: 18px; }
-.slot .add { display: inline-flex; align-items: center; gap: 6px; }
-.lvl .e .ic { width: 38px; height: 38px; }
-.lvl small .ic { width: 14px; height: 14px; vertical-align: -2px; }
-#roomCode .ic { width: 46px; height: 46px; vertical-align: middle; }
-.res-medal .ic { width: 110px; height: 110px; }
-.stats .ic { width: 22px; height: 22px; vertical-align: -3px; }
-.award .ic { width: 24px; height: 24px; vertical-align: -6px; margin-right: 4px; }
-.how p .ic { width: 24px; height: 24px; vertical-align: -6px; margin-right: 2px; }
-#hHearts { letter-spacing: 0; display: flex; gap: 1px; align-items: center; }
-#hHearts .ic, #hStars .ic { width: 20px; height: 20px; }
+.slot .add { display: inline-flex; align-items: center; gap: 8px; }
+.slot .add .tile { font-size: 12px; }
+.lvl .e .tile { font-size: 18px; margin-bottom: 4px; }
+.lvl small .ic { width: 13px; height: 13px; vertical-align: -2px; }
+#roomCode .ic { width: 44px; height: 44px; vertical-align: middle; color: #ff7a45; }
+.res-medal { display: grid; place-items: center; }
+.stats .ic { width: 20px; height: 20px; vertical-align: -3px; }
+.award { display: flex; align-items: center; gap: 10px; }
+.award .tile { font-size: 13px; }
+.how p { display: flex; gap: 10px; align-items: flex-start; }
+.how p .tile { font-size: 13px; margin-top: 2px; }
+#hHearts { letter-spacing: 0; display: flex; gap: 2px; align-items: center; color: #ff7a45; }
+#hHearts .ic, #hStars .ic { width: 19px; height: 19px; }
 #hStars { display: flex; gap: 4px; align-items: center; }
+#hStars .ic, .stats .ic.star { color: #f5b301; fill: #f5b301; }
 .pill.icon .ic { width: 18px; height: 18px; vertical-align: -3px; }
-#progRaft .ic { width: 24px; height: 24px; }
-#progFlag .ic { width: 24px; height: 24px; }
+#progRaft .ic { width: 24px; height: 24px; color: #ff7a45; background: #fff; border-radius: 50%; padding: 2px; }
+#progFlag .ic { width: 22px; height: 22px; color: #23324d; }
 .tm img.cp { width: 24px; height: 24px; object-fit: contain; }
-.tm .ic { width: 16px; height: 16px; }
-#gasEmoji .ic { width: 58px; height: 58px; }
-#banner .ic { width: 0.9em; height: 0.9em; vertical-align: -0.1em; }
-.ftxt .ic { width: 1.1em; height: 1.1em; vertical-align: -0.2em; }
+.tm .ic { width: 15px; height: 15px; }
+#gasEmoji .ic { width: 52px; height: 52px; color: #1d3a0a; stroke-width: 2.5; }
+#gasBtn.burp #gasEmoji .ic { color: #5a3b00; }
+#banner .ic { width: 0.85em; height: 0.85em; vertical-align: -0.08em; stroke-width: 3; }
+.ftxt .ic { width: 1.05em; height: 1.05em; vertical-align: -0.18em; }
 #loading .spin img { width: 120px; height: 120px; object-fit: contain; }
-#resBtns { display: flex; flex-direction: column; gap: 10px; }
+
+/* Sağ-sol sürgüsü */
+#joyBase { width: 168px; height: 74px; margin: -37px 0 0 -84px; border-radius: 37px; display: flex; align-items: center; justify-content: space-between; padding: 0 10px; color: #fff; }
+#joyBase .ar { width: 30px; height: 30px; opacity: 0.85; transition: transform 0.1s; }
+#joyBase.l .ar.l, #joyBase.r .ar.r { transform: scale(1.35); opacity: 1; }
+#joyKnob { width: 58px; height: 58px; }
+
+/* Arkadaşlar */
+.card.list { display: flex; flex-direction: column; gap: 8px; }
+.card.list:empty { display: none; }
+#frCode { font-size: 38px; font-weight: 800; letter-spacing: 6px; line-height: 1; padding-left: 6px; color: #14b8a6; }
+.fr { display: flex; align-items: center; gap: 10px; background: #f3f8fd; border-radius: 16px; padding: 6px 10px; }
+.fr .nm { flex: 1; font-weight: 800; font-size: 17px; line-height: 1.1; }
+.fr .nm small { display: flex; align-items: center; gap: 5px; font-size: 13px; opacity: 0.65; }
+.fr .dot { width: 8px; height: 8px; border-radius: 50%; background: #9aa7b6; display: inline-block; }
+.fr.on .dot { background: #22b573; box-shadow: 0 0 0 3px rgba(34, 181, 115, 0.2); }
+.pill-btn { background: #fff; border-radius: 12px; padding: 6px 10px; font-weight: 800; font-size: 14px; display: inline-flex; align-items: center; gap: 6px; box-shadow: 0 3px 0 rgba(20, 40, 80, 0.12); }
+.pill-btn .ic { width: 17px; height: 17px; }
+.pill-btn.ok { background: #22b573; color: #fff; }
+.pill-btn.no { background: #ffe3e3; color: #b42318; }
+.pill-btn.no.sure { background: #ef4444; color: #fff; }
+.pill-btn:disabled { opacity: 0.6; }
+.muted-dark { font-weight: 700; opacity: 0.6; font-size: 15px; padding: 4px 2px; }
+#lobbyFriends { display: flex; flex-direction: column; gap: 8px; }
+#inviteBox { position: fixed; left: 50%; top: calc(var(--sat) + 14px); transform: translateX(-50%); z-index: 70; background: #fff; border-radius: 20px; padding: 10px 12px; display: flex; align-items: center; gap: 10px; box-shadow: 0 10px 30px rgba(20, 40, 80, 0.3); max-width: calc(100vw - 24px); animation: drop 0.35s cubic-bezier(0.3, 1.6, 0.6, 1); }
+#inviteBox .txt { font-weight: 700; font-size: 15px; }
+@keyframes drop { from { transform: translate(-50%, -30px); opacity: 0; } }

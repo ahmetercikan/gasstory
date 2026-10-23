@@ -4,18 +4,15 @@ import { locate, sampleAt } from './track.js';
 export const RAFT_R = 2.2;      // salın dış yarıçapı (duvar çarpışması)
 export const HIT_R = 1.75;       // dikenlere karşı bağışlayıcı yarıçap
 export const DECK_R = 1.75;     // üstünde yürünebilen alan
-const RIM = DECK_R + 0.15;
+export const RIM_R = 1.98;      // karakterlerin durduğu simit çemberi
 const RAFT_MASS = 2.2, TILT_MASS = 1.25;
 const FART_F = 11, DRAG = 0.9, TORQUE_K = 0.45;
-const SLIDE = 5.2, EXT_DAMP = 3, FALL_V = 1.25;
+const TURN_SPEED = 2.5;         // kenarda dönme hızı (rad/sn)
+const MIN_GAP = 0.62;           // iki karakter arası en az açı
+const SLIP_TILT = 0.8;          // sal bu kadar yatınca alçak taraftakiler kayar
 const MAX_HP = 3;
-
-const SPAWNS = [
-  [[0, 0.2]],
-  [[-0.95, 0.1], [0.95, 0.1]],
-  [[0, -0.95], [-0.85, 0.55], [0.85, 0.55]],
-  [[-0.85, -0.75], [0.85, -0.75], [-0.85, 0.75], [0.85, 0.75]],
-];
+// Yerel açı a: konum (cos a, sin a)·R. Yerel ileri (0,-1) → a = -π/2, arka (0,1) → a = π/2.
+const BACK = Math.PI / 2;
 
 export class Sim {
   constructor(T, roster) {
@@ -32,7 +29,7 @@ export class Sim {
     this.raft = { x: 0, z: 0, y: 0, vx: 0, vz: 0, a: 0, va: 0, tx: 0, tz: 0, tvx: 0, tvz: 0, hp: MAX_HP, inv: 0, flip: 0, hint: -1, s: 0, u: 0, h: 0, slope: 0, prevSlope: 0 };
     this.players = roster.map((r) => ({
       slot: r.slot, name: r.name, char: r.char, power: r.power, bot: !!r.bot,
-      lx: 0, lz: 0, ivx: 0, ivz: 0, ex: 0, ez: 0, face: 0,
+      ang: BACK, av: 0, slip: 0, lx: 0, lz: 0, face: 0, turnDir: 0,
       onRaft: true, wx: 0, wz: 0, wvx: 0, wvz: 0, wT: 0,
       meter: 1, charge: 0, gasOn: false, burpT: 0, boost: 0, dizzy: 0, moving: false, stinkT: 0,
       stat: { gas: 0, falls: 0, annoy: 0 },
@@ -49,15 +46,22 @@ export class Sim {
     r.vx = Math.sin(p.h) * p.cur; r.vz = -Math.cos(p.h) * p.cur;
     r.tx = r.tz = r.tvx = r.tvz = 0; r.hint = -1; r.flip = 0;
     r.hp = MAX_HP; r.inv = 1.5;
-    const sp = SPAWNS[Math.min(4, this.players.length) - 1] || SPAWNS[0];
+    // Herkes salın arka tarafından başlayarak eşit aralıklarla kenara dizilir
+    const n = this.players.length;
     this.players.forEach((pl, i) => {
-      const q = sp[i % sp.length];
-      pl.lx = q[0]; pl.lz = q[1]; pl.ivx = pl.ivz = pl.ex = pl.ez = 0; pl.face = 0;
-      pl.onRaft = true; pl.charge = 0; pl.gasOn = false; pl.meter = 1; pl.dizzy = 0;
+      pl.ang = BACK + (n > 1 ? (i - (n - 1) / 2) * (Math.PI * 2 / n) : 0);
+      pl.av = 0; pl.slip = 0; pl.onRaft = true; pl.charge = 0; pl.gasOn = false; pl.meter = 1; pl.dizzy = 0;
+      this.placeOnRim(pl);
     });
   }
 
-  // inputs: slot → { mx, mz (dünya yönünde hareket), g (gaz basılı) }
+  placeOnRim(p) {
+    p.lx = Math.cos(p.ang) * RIM_R; p.lz = Math.sin(p.ang) * RIM_R;
+    // Osuran popoyu dışarı (yüzü merkeze), geğiren yüzü dışarı verir
+    p.face = p.power === 'fart' ? Math.atan2(-Math.cos(p.ang), Math.sin(p.ang)) : Math.atan2(Math.cos(p.ang), -Math.sin(p.ang));
+  }
+
+  // inputs: slot → { turn (-1..1: kenarda dönme), g (gaz basılı) }
   step(dt, inputs) {
     this.time += dt;
     const r = this.raft;
@@ -106,67 +110,44 @@ export class Sim {
 
   updatePlayers(dt, inputs, active) {
     const r = this.raft;
-    let fx = 0, fz = 0, tq = 0;
+    let fx = 0, fz = 0;
     const on = this.players.filter((p) => p.onRaft);
     for (const p of this.players) {
-      const inp = (p.bot ? this.botInput(p) : inputs[p.slot]) || { mx: 0, mz: 0, g: false };
+      const inp = (p.bot ? this.botInput(p) : inputs[p.slot]) || { turn: 0, g: false };
       p.burpT = Math.max(0, p.burpT - dt);
       p.boost = Math.max(0, p.boost - dt);
       p.dizzy = Math.max(0, p.dizzy - dt);
       p.stinkT = Math.max(0, p.stinkT - dt);
-      if (!p.onRaft) { this.swim(p, dt, inp); continue; }
+      if (!p.onRaft) { this.swim(p, dt); continue; }
 
-      // Hareket: dünya → sal yerel uzayı
-      const [lmx, lmz] = rot(inp.mx, inp.mz, -r.a);
-      const mag = Math.min(1, Math.hypot(lmx, lmz));
-      p.moving = mag > 0.15;
-      let spd = 3.1;
-      if (p.dizzy > 0) spd *= 0.55;
-      if (p.charge > 0) spd *= 0.45;
-      if (p.gasOn) spd *= 0.6;
-      const k = Math.min(1, dt * 12);
-      p.ivx = lerp(p.ivx, p.moving ? lmx * spd : 0, k);
-      p.ivz = lerp(p.ivz, p.moving ? lmz * spd : 0, k);
-      if (p.moving) {
-        const tf = Math.atan2(lmx, -lmz);
-        p.face += angDiff(p.face, tf) * Math.min(1, dt * (p.gasOn || p.charge > 0 ? 5 : 14));
-      }
-      // Eğimde kayma + dönen salda merkezkaç
-      p.ex += (r.tx * SLIDE + r.va * r.va * p.lx * 0.7) * dt;
-      p.ez += (r.tz * SLIDE + r.va * r.va * p.lz * 0.7) * dt;
-      const damp = Math.exp(-EXT_DAMP * dt);
-      p.ex *= damp; p.ez *= damp;
-      let nx = p.lx + (p.ivx + p.ex) * dt, nz = p.lz + (p.ivz + p.ez) * dt;
-      const d = Math.hypot(nx, nz);
-      if (d > RIM) {
-        const ux = nx / d, uz = nz / d;
-        const outV = p.ex * ux + p.ez * uz;
-        if (active && outV > FALL_V) { this.fallOff(p, ux, uz, outV); continue; }
-        nx = ux * RIM; nz = uz * RIM;
-        const iv = p.ivx * ux + p.ivz * uz; if (iv > 0) { p.ivx -= iv * ux; p.ivz -= iv * uz; }
-        if (outV > 0) { p.ex -= outV * ux; p.ez -= outV * uz; }
-      }
-      p.lx = nx; p.lz = nz;
+      // Kenar boyunca dönme
+      let spd = TURN_SPEED;
+      if (p.dizzy > 0) spd *= 0.5;
+      if (p.charge > 0 || p.gasOn) spd *= 0.6;
+      const turn = clamp(+inp.turn || 0, -1, 1);
+      p.moving = Math.abs(turn) > 0.1;
+      p.av *= Math.exp(-4 * dt);
+      p.ang += (turn * spd + p.av) * dt;
 
-      // Gaz
-      const fwx = Math.sin(p.face), fwz = -Math.cos(p.face); // yerel bakış yönü
-      const [wfx, wfz] = rot(fwx, fwz, r.a);                  // dünya bakış yönü
-      const [wpx, wpz] = rot(p.lx, p.lz, r.a);                // oyuncunun salın merkezine göre yeri
+      // Alçak taraftakiler kayar
+      const toward = r.tx * Math.cos(p.ang) + r.tz * Math.sin(p.ang);
+      p.slip = active && toward > SLIP_TILT ? p.slip + dt : Math.max(0, p.slip - dt * 2);
+      if (p.slip > 0.35) { this.fallOff(p, 2.5); continue; }
+
+      // Gaz: karakterin olduğu yerden salın merkezine doğru iter
+      const [inx, inz] = rot(-Math.cos(p.ang), -Math.sin(p.ang), r.a);
       if (p.power === 'fart') {
         p.gasOn = active && inp.g && p.meter > 0.02;
         if (p.gasOn) {
           p.meter = Math.max(0, p.meter - dt * (p.boost > 0 ? 0.1 : 0.21));
           p.stat.gas += dt;
           const F = FART_F * (p.boost > 0 ? 1.6 : 1);
-          fx += wfx * F; fz += wfz * F; tq += (wpx * wfz * F - wpz * wfx * F);
-          // Arkada kalanları koku çarpar
+          fx += inx * F; fz += inz * F;
+          // Yanındakileri koku çarpar
           for (const q of on) {
-            if (q === p) continue;
-            const dx = q.lx - p.lx, dz = q.lz - p.lz, dd = Math.hypot(dx, dz);
-            if (dd < 1.7 && dd > 0.01 && (dx * -fwx + dz * -fwz) / dd > 0.5) {
-              q.dizzy = Math.max(q.dizzy, 0.6);
-              if (q.stinkT <= 0) { q.stinkT = 1.6; p.stat.annoy++; this.ev('stink', { slot: q.slot, by: p.slot }); }
-            }
+            if (q === p || Math.abs(angDiff(p.ang, q.ang)) > 0.95) continue;
+            q.dizzy = Math.max(q.dizzy, 0.6);
+            if (q.stinkT <= 0) { q.stinkT = 1.6; p.stat.annoy++; this.ev('stink', { slot: q.slot, by: p.slot }); }
           }
         } else p.meter = Math.min(1, p.meter + dt * 0.11);
       } else {
@@ -178,22 +159,19 @@ export class Sim {
           if (p.charge > 0) {
             if (p.charge > 0.08 && active) {
               const c = p.charge, J = (5 + 11 * c) * (p.boost > 0 ? 1.5 : 1);
-              const M = RAFT_MASS + on.length, I = M * 1.6;
-              // Ağızdan çıkan gaz salı TERS yöne iter
-              r.vx -= (wfx * J) / M; r.vz -= (wfz * J) / M;
-              r.va += (TORQUE_K * (wpx * -wfz * J - wpz * -wfx * J)) / I;
+              const M = RAFT_MASS + on.length;
+              r.vx += (inx * J) / M; r.vz += (inz * J) / M;
+              // Geri tepme salı geğirenin tarafına sallar
+              r.tvx += Math.cos(p.ang) * c * 1.6; r.tvz += Math.sin(p.ang) * c * 1.6;
               p.meter = Math.max(0, p.meter - (0.12 + 0.3 * c));
               p.burpT = 0.45; p.stat.gas += 1 + c * 2;
-              p.ex -= fwx * (1 + c * 1.5); p.ez -= fwz * (1 + c * 1.5);
+              // Yanındakileri kenar boyunca savurur
               for (const q of on) {
-                if (q === p) continue;
-                const dx = q.lx - p.lx, dz = q.lz - p.lz, dd = Math.hypot(dx, dz);
-                if (dd < 2.3 && dd > 0.01 && (dx * fwx + dz * fwz) / dd > 0.45) {
-                  const push = (2.2 + 3.2 * c) * (1.15 - dd / 2.3);
-                  q.ex += (dx / dd) * push; q.ez += (dz / dd) * push; q.dizzy = 0.9;
-                  p.stat.annoy++;
-                  this.ev('blown', { slot: q.slot, by: p.slot });
-                }
+                const d = angDiff(p.ang, q.ang);
+                if (q === p || Math.abs(d) > 1.1) continue;
+                q.av += Math.sign(d || 1) * (2.5 + 4 * c); q.dizzy = 0.9;
+                p.stat.annoy++;
+                this.ev('blown', { slot: q.slot, by: p.slot });
               }
               this.ev('burp', { slot: p.slot, k: c });
             } else this.ev('burpCancel', { slot: p.slot });
@@ -203,23 +181,23 @@ export class Sim {
         }
       }
     }
-    // Oyuncular birbirinin içinden geçmesin
-    for (let i = 0; i < on.length; i++) for (let j = i + 1; j < on.length; j++) {
-      const a = on[i], b = on[j];
-      if (!a.onRaft || !b.onRaft) continue;
-      const dx = b.lx - a.lx, dz = b.lz - a.lz, d = Math.hypot(dx, dz);
-      if (d < 0.8 && d > 1e-4) {
-        const push = (0.8 - d) / 2, ux = dx / d, uz = dz / d;
-        a.lx -= ux * push; a.lz -= uz * push; b.lx += ux * push; b.lz += uz * push;
+    // Kenarda birbirinin içinden geçmesinler
+    const onNow = on.filter((p) => p.onRaft);
+    for (let it = 0; it < 2; it++) for (let i = 0; i < onNow.length; i++) for (let j = i + 1; j < onNow.length; j++) {
+      const a = onNow[i], b = onNow[j], d = angDiff(a.ang, b.ang);
+      if (Math.abs(d) < MIN_GAP) {
+        const push = (MIN_GAP - Math.abs(d)) / 2 * Math.sign(d || 1);
+        a.ang -= push; b.ang += push;
       }
     }
-    return { fx, fz, tq };
+    for (const p of onNow) this.placeOnRim(p);
+    return { fx, fz, tq: 0 };
   }
 
-  fallOff(p, ux, uz, v) {
+  fallOff(p, v) {
     const r = this.raft;
-    p.onRaft = false; p.gasOn = false; p.charge = 0;
-    const [wx, wz] = rot(ux, uz, r.a);
+    p.onRaft = false; p.gasOn = false; p.charge = 0; p.slip = 0;
+    const [wx, wz] = rot(Math.cos(p.ang), Math.sin(p.ang), r.a);
     p.wx = r.x + wx * (RAFT_R + 0.5); p.wz = r.z + wz * (RAFT_R + 0.5);
     p.wvx = r.vx + wx * v; p.wvz = r.vz + wz * v;
     p.wT = 5;
@@ -227,25 +205,27 @@ export class Sim {
     this.ev('fall', { slot: p.slot });
   }
 
-  swim(p, dt, inp) {
+  // Suya düşen sala doğru yüzer; değince ya da 5 sn sonra kenara tırmanır.
+  swim(p, dt) {
     const r = this.raft;
-    p.moving = Math.hypot(inp.mx, inp.mz) > 0.15;
     const loc = locate(this.T, p.wx, p.wz, r.hint);
-    const cx = loc.fx * loc.cur, cz = loc.fz * loc.cur;
+    const dx0 = r.x - p.wx, dz0 = r.z - p.wz, d0 = Math.hypot(dx0, dz0) || 1;
     const k = Math.min(1, dt * 2.5);
-    p.wvx = lerp(p.wvx, cx + inp.mx * 2.8, k);
-    p.wvz = lerp(p.wvz, cz + inp.mz * 2.8, k);
+    p.wvx = lerp(p.wvx, loc.fx * loc.cur + (dx0 / d0) * 2.6, k);
+    p.wvz = lerp(p.wvz, loc.fz * loc.cur + (dz0 / d0) * 2.6, k);
     p.wx += p.wvx * dt; p.wz += p.wvz * dt;
+    p.moving = true;
     const lim = loc.w - 0.6;
     if (Math.abs(loc.u) > lim) { const o = (Math.abs(loc.u) - lim) * Math.sign(loc.u); p.wx -= loc.rx * o; p.wz -= loc.rz * o; }
-    if (p.moving) p.face = Math.atan2(...rot(inp.mx, inp.mz, -r.a).map((v, i) => (i ? -v : v)));
+    const [lfx, lfz] = rot(dx0, dz0, -r.a);
+    p.face = Math.atan2(lfx, -lfz);
     p.wT -= dt;
     const dx = p.wx - r.x, dz = p.wz - r.z, d = Math.hypot(dx, dz);
     if (this.mode === 'play' && (d < RAFT_R + 0.45 || p.wT <= 0)) {
-      p.onRaft = true;
-      const [lx, lz] = d > 0.01 && p.wT > 0 ? rot(dx / d, dz / d, -r.a) : [0, 0];
-      p.lx = lx * DECK_R * 0.85; p.lz = lz * DECK_R * 0.85;
-      p.ex = -p.lx * 0.5; p.ez = -p.lz * 0.5; p.ivx = p.ivz = 0;
+      p.onRaft = true; p.av = 0; p.slip = 0;
+      const [lx, lz] = rot(dx, dz, -r.a);
+      p.ang = Math.atan2(lz, lx);
+      this.placeOnRim(p);
       this.ev(p.wT <= 0 ? 'rescue' : 'climb', { slot: p.slot });
     }
   }
@@ -285,7 +265,7 @@ export class Sim {
       this.ev('land');
       const a = Math.random() * Math.PI * 2;
       r.tvx += Math.cos(a) * 3.2; r.tvz += Math.sin(a) * 3.2;
-      for (const p of this.players) if (p.onRaft) { p.ex += (Math.random() - 0.5) * 2.4; p.ez += (Math.random() - 0.5) * 2.4; }
+      for (const p of this.players) if (p.onRaft) p.av += (Math.random() - 0.5) * 5;
     }
   }
 
@@ -294,7 +274,8 @@ export class Sim {
     const r = this.raft;
     const [lx, lz] = rot(wx, wz, -r.a);
     r.tvx += lx * k * 0.9; r.tvz += lz * k * 0.9;
-    for (const p of this.players) if (p.onRaft) { p.ex += lx * k * 0.5; p.ez += lz * k * 0.5; }
+    // Sert darbede çarpma tarafındaki yolcular suya uçabilir
+    for (const p of this.players) if (p.onRaft && k > 2.4 && (Math.cos(p.ang) * lx + Math.sin(p.ang) * lz) > 0.75 && Math.random() < 0.5) this.fallOff(p, 2);
   }
 
   collide(loc) {
@@ -387,7 +368,6 @@ export class Sim {
     const r = this.raft;
     const tm = Math.hypot(r.tx, r.tz), ux = r.tx / tm, uz = r.tz / tm;
     for (const p of this.players) if (p.onRaft) {
-      p.ex = ux * 3; p.ez = uz * 3;
       const [wx, wz] = rot(ux, uz, r.a);
       p.onRaft = false; p.gasOn = false; p.charge = 0;
       const [ox, oz] = rot(p.lx, p.lz, r.a);
@@ -412,53 +392,48 @@ export class Sim {
     }
   }
 
-  // --- Botlar: dengeyi korur, salı nehrin ortasında ve engellerden uzak tutmaya çalışır.
+  // --- Botlar: kenarda dengeyi korur; itmek gerekirse biri itilecek yönün tam karşısına geçip gaz verir.
   botInput(p) {
     const r = this.raft, T = this.T;
-    if (!p.onRaft) {
-      const dx = r.x - p.wx, dz = r.z - p.wz, d = Math.hypot(dx, dz) || 1;
-      return { mx: dx / d, mz: dz / d, g: false };
-    }
-    // Botlar insan oyuncuların ağırlığını dengeleyecek şekilde bir yay üzerine yayılır.
-    let hx = 0, hz = 0;
-    const bots = this.players.filter((q) => q.bot && q.onRaft);
-    for (const q of this.players) if (!q.bot && q.onRaft) { hx += q.lx; hz += q.lz; }
-    const k = bots.indexOf(p), nb = bots.length, hm = Math.hypot(hx, hz);
-    let ang, rad;
-    if (hm < 0.25) { ang = (k / nb) * Math.PI * 2 + 0.6; rad = nb > 1 ? 1.0 : 0.2; }
-    else {
-      const spread = nb > 1 ? Math.min(1.3, 2.4 / nb) : 0;
-      ang = Math.atan2(-hz, -hx) + (k - (nb - 1) / 2) * spread;
-      let cs = 0; for (let i = 0; i < nb; i++) cs += Math.cos((i - (nb - 1) / 2) * spread);
-      rad = clamp(hm / Math.max(0.5, cs), 0.5, DECK_R * 0.85);
-    }
-    let tx = Math.cos(ang) * rad - r.tx * 0.8, tz = Math.sin(ang) * rad - r.tz * 0.8;
-    const tl = Math.hypot(tx, tz); if (tl > DECK_R * 0.85) { tx *= (DECK_R * 0.85) / tl; tz *= (DECK_R * 0.85) / tl; }
-    let mlx = tx - p.lx, mlz = tz - p.lz;
-    const ml = Math.hypot(mlx, mlz);
-    if (ml < 0.2) { mlx = 0; mlz = 0; } else { mlx /= ml; mlz /= ml; }
-    // İstenen itiş yönü (dünya): ileride engel varsa boş şeride kay.
+    if (!p.onRaft) return { turn: 0, g: false };
     const loc = locate(T, r.x, r.z, r.hint);
     const { want } = this.botPlan(loc);
     const curLat = r.vx * loc.rx + r.vz * loc.rz;
     const need = want - curLat;
-    let g = false, faceTarget = null;
     p.botGas = Math.abs(need) > (p.botGas ? 0.35 : 0.8);
+    const bots = this.players.filter((q) => q.bot && q.onRaft);
+    // İtilecek yön (dünya) → itici o yönün tersinde, kenarda durmalı
+    let pushAng = null;
     if (p.botGas) {
-      // İtiş yönünü yerel uzaya çevir
-      const dwx = loc.rx * Math.sign(need), dwz = loc.rz * Math.sign(need);
-      let [lx, lz] = rot(dwx, dwz, -r.a);
-      if (p.power === 'burp') { lx = -lx; lz = -lz; }
-      faceTarget = Math.atan2(lx, -lz);
-      const aligned = Math.abs(angDiff(p.face, faceTarget)) < 0.5;
-      g = aligned && (p.power === 'fart' ? p.meter > 0.15 : (p.charge < 0.7 && p.meter > 0.3));
+      const sg = Math.sign(need);
+      const [lx, lz] = rot(-loc.rx * sg, -loc.rz * sg, -r.a);
+      pushAng = Math.atan2(lz, lx);
     }
-    if (faceTarget != null && !g && ml < 0.2) {
-      // Hedefteyken dönmek için çok küçük bir adım at
-      mlx = Math.sin(faceTarget) * 0.2; mlz = -Math.cos(faceTarget) * 0.2;
+    let pusher = null;
+    if (pushAng != null) {
+      let best = Infinity;
+      for (const q of bots) { const d = Math.abs(angDiff(q.ang, pushAng)); if (d < best) { best = d; pusher = q; } }
     }
-    const [mx, mz] = rot(mlx, mlz, r.a);
-    return { mx, mz, g };
+    let target;
+    if (p === pusher) target = pushAng;
+    else {
+      // Sabit ağırlıklar (insanlar + itici) dışındaki botlar dengeyi sağlayacak şekilde yayılır
+      let sx = 0, sz = 0;
+      for (const q of this.players) if (q.onRaft && (!q.bot || q === pusher)) { const a = q === pusher ? pushAng : q.ang; sx += Math.cos(a); sz += Math.sin(a); }
+      const free = bots.filter((q) => q !== pusher), k = free.indexOf(p), nb = free.length;
+      const base = Math.hypot(sx, sz) < 0.2 ? BACK + Math.PI / nb : Math.atan2(-sz, -sx);
+      const spread = nb > 1 ? Math.min(1.4, (Math.PI * 1.6) / nb) : 0;
+      target = base + (k - (nb - 1) / 2) * spread;
+      if (Math.hypot(sx, sz) < 0.2 && nb > 1) target = BACK + (k / nb) * Math.PI * 2;
+    }
+    const diff = angDiff(p.ang, target);
+    const turn = Math.abs(diff) < 0.08 ? 0 : clamp(diff * 2.2, -1, 1);
+    // Gaz: bot itiş yönüne uygun yerdeyse
+    let g = false;
+    if (p.botGas && pushAng != null && Math.abs(angDiff(p.ang, pushAng)) < 0.45) {
+      g = p.power === 'fart' ? p.meter > 0.15 : (p.charge < 0.7 && p.meter > 0.3);
+    }
+    return { turn, g };
   }
 
   // Botların ortak rota planı: ileriye bakıp her engelin varış anındaki konumuna göre
@@ -500,7 +475,7 @@ export class Sim {
     return {
       t: f(this.time), m: this.mode, mt: f(this.modeT),
       r: [r.x, r.z, r.y, r.a, r.vx, r.vz, r.va, r.tx, r.tz, r.hp, r.inv, r.flip].map(f),
-      p: this.players.map((p) => [p.lx, p.lz, p.face, p.onRaft ? 1 : 0, p.wx, p.wz, p.meter, p.charge, p.gasOn ? 1 : 0, p.burpT, p.boost, p.dizzy, p.moving ? 1 : 0].map(f)),
+      p: this.players.map((p) => [p.ang, p.onRaft ? 1 : 0, p.wx, p.wz, p.meter, p.charge, p.gasOn ? 1 : 0, p.burpT, p.boost, p.dizzy, p.moving ? 1 : 0, p.face].map(f)),
       c: [...this.collected], cp: this.cp, st: this.stars, d: this.deaths, ft: f(this.finishTime), cz: this.capsizes, fl: this.falls,
     };
   }
@@ -512,14 +487,14 @@ export class Sim {
     r.tgt = R;
     r.vx = R[4]; r.vz = R[5]; r.va = R[6]; r.tx = R[7]; r.tz = R[8]; r.hp = R[9]; r.inv = R[10]; r.flip = R[11];
     if (r.first !== true) { r.x = R[0]; r.z = R[1]; r.y = R[2]; r.a = R[3]; r.first = true; }
-    S.p.forEach((a, i) => {
+    (S.p || []).forEach((a, i) => {
       const p = this.players[i]; if (!p) return;
       p.tgt = a;
       const wasOn = p.onRaft;
-      p.onRaft = !!a[3]; p.meter = a[6]; p.charge = a[7]; p.gasOn = !!a[8]; p.burpT = a[9]; p.boost = a[10]; p.dizzy = a[11]; p.moving = !!a[12];
-      if (wasOn !== p.onRaft) { p.lx = a[0]; p.lz = a[1]; p.wx = a[4]; p.wz = a[5]; }
+      p.onRaft = !!a[1]; p.meter = a[4]; p.charge = a[5]; p.gasOn = !!a[6]; p.burpT = a[7]; p.boost = a[8]; p.dizzy = a[9]; p.moving = !!a[10];
+      if (wasOn !== p.onRaft || p.first !== true) { p.ang = a[0]; p.wx = a[2]; p.wz = a[3]; p.first = true; }
     });
-    this.collected = new Set(S.c); this.cp = S.cp; this.stars = S.st; this.deaths = S.d; this.finishTime = S.ft; this.capsizes = S.cz; this.falls = S.fl;
+    this.collected = new Set(S.c || []); this.cp = S.cp; this.stars = S.st; this.deaths = S.d; this.finishTime = S.ft; this.capsizes = S.cz; this.falls = S.fl;
   }
 
   // İstemcide anlık görüntüler arasında yumuşatma
@@ -536,10 +511,17 @@ export class Sim {
     for (const p of this.players) {
       if (!p.tgt) continue;
       const a = p.tgt;
-      p.lx = lerp(p.lx, a[0], k * 1.5); p.lz = lerp(p.lz, a[1], k * 1.5);
-      p.face += angDiff(p.face, a[2]) * k * 1.5;
-      p.wx = lerp(p.wx, a[4], k); p.wz = lerp(p.wz, a[5], k);
+      p.ang += angDiff(p.ang, a[0]) * Math.min(1, k * 1.6);
+      p.wx = lerp(p.wx, a[2], k); p.wz = lerp(p.wz, a[3], k);
+      if (p.onRaft) this.placeOnRim(p); else p.face = a[11];
     }
+  }
+
+  // Yerel oyuncunun kendi dönüşünü beklemeden göstermek için (istemci tahmini)
+  predictTurn(slot, turn, dt) {
+    const p = this.players.find((q) => q.slot === slot);
+    if (!p || !p.onRaft || !p.tgt) return;
+    p.tgt[0] += clamp(turn, -1, 1) * TURN_SPEED * (p.dizzy > 0 ? 0.5 : 1) * dt;
   }
 }
 

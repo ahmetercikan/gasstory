@@ -26,10 +26,14 @@ export const isMuted = () => muted;
 export function setMuted(m) { muted = m; store.set('muted', m); if (master) master.gain.setTargetAtTime(m ? 0 : 0.9, ctx.currentTime, 0.05); }
 export const isMusicOn = () => musicOn;
 export function setMusic(on) { musicOn = on; store.set('music', on); if (music) music.gain.setTargetAtTime(on ? 0.22 : 0, ctx.currentTime, 0.1); }
+// Reklam sırasında oyun sesini durdur
+let pausedForAd = false;
+export function pauseAudio() { pausedForAd = true; if (ctx) ctx.suspend(); }
+export function resumeAudio() { pausedForAd = false; if (ctx && !document.hidden) ctx.resume(); }
 // Uygulama arka plana geçince sesi durdur.
 document.addEventListener('visibilitychange', () => {
   if (!ctx) return;
-  if (document.hidden) ctx.suspend(); else ctx.resume();
+  if (document.hidden) ctx.suspend(); else if (!pausedForAd) ctx.resume();
 });
 
 const now = () => ctx.currentTime;

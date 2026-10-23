@@ -1,4 +1,4 @@
-import { THREE, mesh, toon, lerp } from './core.js';
+import { THREE, mesh, toon, lerp, addOutline } from './core.js';
 
 export const CHARS = [
   { id: 'frog', name: 'Kurbağa', img: './img/char-frog.png', color: 0x86d94a, belly: 0xe4f8a8, feet: 0x6cc23a, pitch: 1.25 },
@@ -7,13 +7,13 @@ export const CHARS = [
   { id: 'bear', name: 'Ayı', img: './img/char-bear.png', color: 0x9a6240, belly: 0xe6b582, feet: 0x7a4a2e, pitch: 0.9 },
 ];
 export const POWERS = {
-  fart: { name: 'Osurma', icon: 'fart', desc: 'Basılı tut: sürekli itiş. Sal, baktığın yöne gider.' },
-  burp: { name: 'Geğirme', icon: 'burp', desc: 'Basılı tut, şişir, bırak: dev patlama! Sal arkana fırlar.' },
+  fart: { name: 'Osurma', icon: 'fart', desc: 'Basılı tut: sürekli itiş. Gaz, salı durduğun taraftan karşıya iter.' },
+  burp: { name: 'Geğirme', icon: 'burp', desc: 'Basılı tut, şişir, bırak: dev patlama! Sal karşı tarafa fırlar.' },
 };
 export const SLOT_COLORS = ['#ff5a5f', '#3fa7ff', '#ffc93c', '#b26bff'];
 export const SLOT_HEX = [0xff5a5f, 0x3fa7ff, 0xffc93c, 0xb26bff];
 
-const sph = (r, w = 16, h = 12) => new THREE.SphereGeometry(r, w, h);
+const sph = (r, w = 28, h = 20) => new THREE.SphereGeometry(r, w, h);
 
 function eye(parent, x, y, z, r, white = 0xffffff) {
   const e = mesh(sph(r, 12, 10), white, { cast: false });
@@ -56,8 +56,14 @@ export function buildCharacter(ci, slot) {
   if (C.id === 'frog') {
     headM.scale.set(1.25, 0.82, 1.05);
     eye(head, -0.17, 0.25, -0.12, 0.13); eye(head, 0.17, 0.25, -0.12, 0.13);
-    const m = mesh(new THREE.TorusGeometry(0.2, 0.03, 6, 16, Math.PI), 0x3a1f1f, { cast: false });
-    m.rotation.z = Math.PI; m.rotation.x = -0.35; m.scale.set(1, 0.55, 1); m.position.set(0, 0.03, -0.37); mouth.add(m);
+    // Gülümseme: kafanın ön yüzeyini saran kavisli tüp (her açıdan gülümseme gibi okunur)
+    const pts = [];
+    for (let i = 0; i <= 12; i++) {
+      const th = -0.62 + (i / 12) * 1.24;
+      pts.push(new THREE.Vector3(Math.sin(th) * 0.43, -0.05 + 0.075 * (th / 0.62) ** 2, -Math.cos(th) * 0.37 - 0.012));
+    }
+    const m = mesh(new THREE.TubeGeometry(new THREE.CatmullRomCurve3(pts), 24, 0.02, 6, false), 0x3a1f1f, { cast: false });
+    mouth.add(m);
     for (const s of [-1, 1]) { const c = mesh(sph(0.06, 8, 6), 0xff8fa3, { cast: false }); c.position.set(s * 0.27, -0.03, -0.25); head.add(c); }
   } else if (C.id === 'hippo') {
     headM.scale.set(1.05, 0.95, 1);
@@ -101,6 +107,8 @@ export function buildCharacter(ci, slot) {
   const butt = new THREE.Object3D(); butt.position.set(0, 0.32, 0.42); body.add(butt);
   const mouthPt = new THREE.Object3D(); mouthPt.position.set(0, -0.08, -0.5); head.add(mouthPt);
 
+  // Dış hat: gözler ve küçük parçalar hariç
+  addOutline(root, 0.022, (m) => { if (!m.geometry.boundingSphere) m.geometry.computeBoundingSphere(); return m.geometry.boundingSphere.radius < 0.075; });
   root.scale.setScalar(0.95);
   return {
     root, pivot, body, head, mouth, arms, feet, butt, mouthPt, torso,

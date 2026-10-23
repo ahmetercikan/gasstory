@@ -1,6 +1,7 @@
-import { THREE, scene, mesh, toon, toonNew, canvasTex, clamp, lerp, rng, vnoise, QUALITY, SHADOW_TEX } from './core.js';
+import { THREE, scene, mesh, toon, toonNew, canvasTex, clamp, lerp, rng, vnoise, QUALITY, SHADOW_TEX, addOutline } from './core.js';
 import { sampleAt } from './track.js';
 import { logOffset } from './sim.js';
+import { t } from './i18n.js';
 
 const waterMat = new THREE.ShaderMaterial({
   uniforms: {
@@ -9,11 +10,12 @@ const waterMat = new THREE.ShaderMaterial({
     shallow: { value: new THREE.Color(0x5fd0ff) },
     foamC: { value: new THREE.Color(0xffffff) },
     fogColor: { value: scene.fog.color }, fogNear: { value: scene.fog.near }, fogFar: { value: scene.fog.far },
+    sunDir: { value: new THREE.Vector3(0.4, 0.8, 0.3).normalize() },
   },
-  vertexShader: `attribute float rough; varying vec2 vUv; varying float vR; varying float vDepth;
-void main(){ vUv = uv; vR = rough; vec4 mv = viewMatrix * modelMatrix * vec4(position,1.); vDepth = -mv.z; gl_Position = projectionMatrix * mv; }`,
-  fragmentShader: `uniform float time; uniform vec3 deep, shallow, foamC, fogColor; uniform float fogNear, fogFar;
-varying vec2 vUv; varying float vR; varying float vDepth;
+  vertexShader: `attribute float rough; varying vec2 vUv; varying float vR; varying float vDepth; varying vec3 vW;
+void main(){ vUv = uv; vR = rough; vec4 w = modelMatrix * vec4(position,1.); vW = w.xyz; vec4 mv = viewMatrix * w; vDepth = -mv.z; gl_Position = projectionMatrix * mv; }`,
+  fragmentShader: `uniform float time; uniform vec3 deep, shallow, foamC, fogColor, sunDir; uniform float fogNear, fogFar;
+varying vec2 vUv; varying float vR; varying float vDepth; varying vec3 vW;
 float hash(vec2 p){ return fract(sin(dot(p, vec2(127.1,311.7))) * 43758.5453); }
 float noise(vec2 p){ vec2 i = floor(p), f = fract(p); f = f*f*(3.-2.*f);
   return mix(mix(hash(i), hash(i+vec2(1,0)), f.x), mix(hash(i+vec2(0,1)), hash(i+vec2(1,1)), f.x), f.y); }
@@ -27,7 +29,16 @@ void main(){
   float streak = smoothstep(0.66 - vR * 0.3, 0.72 - vR * 0.3, n) * (1. - smoothstep(0.62, 0.66, n + 0.09 - vR*0.3) * 0.0);
   float zig = smoothstep(0.93, 0.97, noise(vec2(vUv.x * 22., (vUv.y - time * sp) * 1.2)));
   float edgeFoam = smoothstep(0.84, 0.95, e + (noise(vec2(vUv.y * 0.9 - time * 3., vUv.x * 4.)) - 0.5) * 0.12);
+  // Dalgacık normali → güneş parıltısı ve yatay bakışta açılan renk
+  vec2 wq = vW.xz * 0.9 + vec2(0., -time * 2.5);
+  float h0 = noise(wq), hx = noise(wq + vec2(0.15, 0.)), hz = noise(wq + vec2(0., 0.15));
+  vec3 nrm = normalize(vec3((h0 - hx) * 2.2, 1., (h0 - hz) * 2.2));
+  vec3 V = normalize(cameraPosition - vW);
+  float spec = pow(max(dot(reflect(-sunDir, nrm), V), 0.), 90.);
+  float fres = pow(1. - max(dot(nrm, V), 0.), 3.);
+  col = mix(col, vec3(0.75, 0.92, 1.), fres * 0.35);
   col = mix(col, foamC, clamp(max(max(streak * 0.6, zig * 0.7), edgeFoam) + vR * 0.25, 0., 1.));
+  col += spec * 0.9;
   gl_FragColor = vec4(col, 1.);
   #include <colorspace_fragment>
   gl_FragColor.rgb = mix(gl_FragColor.rgb, fogColor, smoothstep(fogNear, fogFar, vDepth));
@@ -175,6 +186,7 @@ export class World {
       else if (o.t === 'star' || o.t === 'bean' || o.t === 'soda') { g = makePickup(o); this.pickups.set(o.id, g); }
       else if (o.t === 'cp') { this.cpFlags.push(...makeCheckpoint(o, this.T, this.group)); continue; }
       if (!g) continue;
+      if (o.t !== 'whirl') addOutline(g, o.t === 'rock' ? 0.05 : 0.035, (m) => m.material?.transparent || m.geometry.type === 'RingGeometry');
       g.position.set(o.x, o.y, o.z);
       g.rotation.y = -o.h;
       g.userData.o = o;
@@ -197,7 +209,7 @@ export class World {
       for (let i = 0; i < n; i++) for (let j = 0; j < 2; j++) { c.fillStyle = (i + j) % 2 ? '#222' : '#fff'; c.fillRect((i * w) / n, (j * h) / 4, w / n, h / 4); }
       c.fillStyle = '#ffd23f'; c.fillRect(0, h / 2, w, h / 2);
       c.fillStyle = '#d6336c'; c.font = `bold ${h * 0.38}px "Baloo 2", sans-serif`; c.textAlign = 'center'; c.textBaseline = 'middle';
-      c.fillText('BİTİŞ  •  BİTİŞ', w / 2, h * 0.76);
+      c.fillText(t('BİTİŞ  •  BİTİŞ'), w / 2, h * 0.76);
     }, 1024, 256);
     const banner = new THREE.Mesh(new THREE.PlaneGeometry(W * 2, W * 0.5), new THREE.MeshToonMaterial({ map: tex, side: THREE.DoubleSide }));
     banner.position.y = 7.6;
@@ -378,7 +390,9 @@ export class RaftView {
     const segs = 8;
     this.tubes = [];
     for (let i = 0; i < segs; i++) {
-      const t = mesh(new THREE.TorusGeometry(1.98, 0.42, 12, 10, (Math.PI * 2) / segs + 0.01), i % 2 ? 0xfff0dc : 0xffd2a8);
+      const t = new THREE.Mesh(new THREE.TorusGeometry(1.98, 0.42, 20, 16, (Math.PI * 2) / segs + 0.01),
+        new THREE.MeshPhongMaterial({ color: i % 2 ? 0xfff3e2 : 0xff9e7a, shininess: 70, specular: 0x777777 }));
+      t.castShadow = true;
       t.rotation.x = -Math.PI / 2; t.rotation.z = (i / segs) * Math.PI * 2; t.position.y = 0.35;
       this.body.add(t); this.tubes.push(t);
     }
@@ -396,9 +410,11 @@ export class RaftView {
       h.position.set(Math.cos(a) * 2.02, 0.72, Math.sin(a) * 2.02); h.rotation.y = -a;
       this.body.add(h);
     }
+    addOutline(this.body, 0.03);
     this.shadow = new THREE.Mesh(new THREE.CircleGeometry(2.7, 24), new THREE.MeshBasicMaterial({ map: SHADOW_TEX, transparent: true, depthWrite: false }));
     this.shadow.rotation.x = -Math.PI / 2;
     this.deckY = 0.28;
+    this.rimY = 0.66; // karakterler simidin üstünde durur
     scene.add(this.root, this.shadow);
     this.popK = 0;
   }
@@ -418,7 +434,8 @@ export class RaftView {
     this.popK = sim.mode === 'popped' ? Math.min(1, this.popK + dt * 1.2) : Math.max(0, this.popK - dt * 3);
     this.body.scale.x = this.body.scale.z = 1 - this.popK * 0.5;
     this.body.position.y = -this.popK * 0.5;
-    this.body.visible = !(r.inv > 0 && sim.mode === 'play' && Math.floor(t * 12) % 2 === 0);
+    // Yalnızca hasar aldıktan sonraki dokunulmazlıkta yanıp söner (başlangıçta ve yeniden doğuşta değil)
+    this.body.visible = !(r.inv > 0 && r.hp < 3 && sim.mode === 'play' && Math.floor(t * 12) % 2 === 0);
     this.shadow.position.set(r.x, r.y + 0.03, r.z);
   }
 }

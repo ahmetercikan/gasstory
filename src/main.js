@@ -4,7 +4,7 @@ import '@fontsource/baloo-2/latin-700.css';
 import '@fontsource/baloo-2/latin-ext-700.css';
 import '@fontsource/baloo-2/latin-800.css';
 import '@fontsource/baloo-2/latin-ext-800.css';
-import { THREE, $, renderer, scene, camera, sky, sun, SUN_OFFSET, clamp, angDiff, store, vibrate, project } from './core.js';
+import { THREE, $, renderer, scene, camera, sky, sun, SUN_OFFSET, clamp, angDiff, rot, store, vibrate, project } from './core.js';
 import { CHARS, POWERS, SLOT_COLORS, buildCharacter, animateCharacter } from './chars.js';
 import * as A from './audio.js';
 import { LEVELS, buildTrack, sampleAt, locate } from './track.js';
@@ -12,14 +12,22 @@ import { Sim } from './sim.js';
 import { World, RaftView } from './world.js';
 import * as FX from './fx.js';
 import { readInput, resetInput } from './input.js';
-import { net, hostRoom, joinRoom, broadcast, sendToHost, kick, closeNet } from './net.js';
+import { net, hostRoom, joinRoom, quickMatch, updateRoomMeta, broadcast, sendToHost, kick, closeNet } from './net.js';
+import { social, startOnline, saveProfile, setRoom, addFriendByCode, acceptRequest, declineRequest, removeFriend, inviteFriend, deleteMyData } from './online.js';
 import { initNative } from './native.js';
-import { ic, hydrateIcons } from './icons.js';
+import { initAds, showLevelEndAd } from './ads.js';
+import { ic, tile, hydrateIcons } from './icons.js';
+import { t as tt, LANG, applyLang, setLang } from './i18n.js';
 
 const portrait = (ci, cls = 'cp') => `<img class="${cls}" src="${CHARS[ci].img}" alt="">`;
 
 const profile = Object.assign({ name: '', char: Math.floor(Math.random() * 4), power: 'fart' }, store.get('profile', {}));
-const saveProfile = () => store.set('profile', profile);
+let profileTimer = 0;
+const saveLocalProfile = () => {
+  store.set('profile', profile);
+  clearTimeout(profileTimer);
+  profileTimer = setTimeout(() => { if (social.uid) saveProfile(myInfo()).catch(() => {}); }, 800);
+};
 const TRACKS = [];
 const getTrack = (i) => (TRACKS[i] ||= buildTrack(LEVELS[i]));
 const BOT_NAMES = ['Pırtcan', 'Böğürtlen', 'Gazoz', 'Fasulye', 'Pofuduk', 'Bulut', 'Kokoş', 'Hıçkır'];
@@ -28,7 +36,7 @@ const G = {
   screen: 'menu', sim: null, world: null, raft: null, chars: [], tags: [],
   level: 0, roster: [], mySlot: -1, camH: 0, camInit: false, shake: 0, paused: false,
   resultsShown: false, finishWait: 0, attract: false, snapAcc: 0, inAcc: 0, acc: 0,
-  remoteInputs: {}, netEvents: [], fartH: {}, chargeH: {}, puffAcc: {}, ringT: 0, hudT: 0, results: null,
+  remoteInputs: {}, netEvents: [], turnSign: 0, lastIn: { turn: 0, g: false }, fartH: {}, chargeH: {}, puffAcc: {}, ringT: 0, hudT: 0, results: null,
 };
 const _v = new THREE.Vector3(), _v2 = new THREE.Vector3();
 
@@ -49,7 +57,7 @@ function showHint(text) {
   clearTimeout(hintT); hintT = setTimeout(() => el.classList.remove('show'), 4200);
 }
 function show(id) {
-  for (const s of ['menu', 'lobby', 'results', 'pause', 'howto']) $('#' + s).classList.toggle('hidden', s !== id);
+  for (const s of ['menu', 'lobby', 'results', 'pause', 'howto', 'friends']) $('#' + s).classList.toggle('hidden', s !== id);
 }
 const esc = (s) => String(s).replace(/[&<>"']/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
 const fmtTime = (t) => { t = Math.max(0, t); const m = Math.floor(t / 60), s = t - m * 60; return `${m}:${s < 10 ? '0' : ''}${s.toFixed(1)}`; };
@@ -58,29 +66,36 @@ const fmtTime = (t) => { t = Math.max(0, t); const m = Math.floor(t / 60), s = t
 function buildMenu() {
   const nameIn = $('#nameIn');
   nameIn.value = profile.name;
-  nameIn.addEventListener('input', () => { profile.name = nameIn.value.trim().slice(0, 12); saveProfile(); });
+  nameIn.addEventListener('input', () => { profile.name = nameIn.value.trim().slice(0, 12); saveLocalProfile(); });
+  buildCharPick();
   const cp = $('#charPick');
-  cp.innerHTML = CHARS.map((c, i) => `<button data-i="${i}">${portrait(i)}<span>${c.name}</span></button>`).join('');
   cp.addEventListener('click', (e) => {
     const b = e.target.closest('button'); if (!b) return;
-    profile.char = +b.dataset.i; saveProfile(); renderMenu();
+    profile.char = +b.dataset.i; saveLocalProfile(); renderMenu();
     A.sfxs.fartShort(CHARS[profile.char].pitch);
   });
   const pp = $('#powPick');
-  pp.innerHTML = Object.entries(POWERS).map(([k, p]) => `<button data-k="${k}" class="${k}">${ic(p.icon)} ${p.name}</button>`).join('');
   pp.addEventListener('click', (e) => {
     const b = e.target.closest('button'); if (!b) return;
-    profile.power = b.dataset.k; saveProfile(); renderMenu();
+    profile.power = b.dataset.k; saveLocalProfile(); renderMenu();
     if (profile.power === 'fart') A.sfxs.fartShort(CHARS[profile.char].pitch); else A.burp(0.4, CHARS[profile.char].pitch);
   });
   $('#soloBtn').onclick = () => enterLobby('local');
+  $('#quickBtn').onclick = () => enterLobby('quick');
+  $('#langLbl').textContent = LANG === 'tr' ? 'EN' : 'TR';
+  $('#langBtn').onclick = () => {
+    setLang(LANG === 'tr' ? 'en' : 'tr');
+    $('#langLbl').textContent = LANG === 'tr' ? 'EN' : 'TR';
+    buildCharPick(); renderMenu(); renderSound(); A.sfxs.click();
+  };
+  $('#friendsBtn').onclick = () => openFriends();
   $('#hostBtn').onclick = () => enterLobby('host');
   $('#joinOpen').onclick = () => { $('#joinBox').classList.toggle('hidden'); $('#codeIn').focus(); };
   $('#codeIn').addEventListener('input', (e) => { e.target.value = e.target.value.toUpperCase().replace(/[^A-Z0-9]/g, ''); });
   $('#codeIn').addEventListener('keydown', (e) => { if (e.key === 'Enter') $('#joinBtn').click(); });
   $('#joinBtn').onclick = () => {
     const code = $('#codeIn').value.trim();
-    if (code.length !== 4) { toast('Oda kodu 4 harfli olmalı'); return; }
+    if (code.length !== 4) { toast(tt('Oda kodu 4 harfli olmalı')); return; }
     enterLobby('client', code);
   };
   $('#howBtn').onclick = () => show('howto');
@@ -89,16 +104,89 @@ function buildMenu() {
   for (const id of ['#musBtn', '#musBtn2']) $(id).onclick = () => { A.setMusic(!A.isMusicOn()); renderSound(); };
   renderMenu(); renderSound();
 }
+function buildCharPick() {
+  $('#charPick').innerHTML = CHARS.map((c, i) => `<button data-i="${i}">${portrait(i)}<span>${tt(c.name)}</span></button>`).join('');
+  $('#powPick').innerHTML = Object.entries(POWERS).map(([k, p]) => `<button data-k="${k}" class="${k}">${tile(p.icon)} ${tt(p.name)}</button>`).join('');
+}
 function renderMenu() {
   document.querySelectorAll('#charPick button').forEach((b) => b.classList.toggle('on', +b.dataset.i === profile.char));
   document.querySelectorAll('#powPick button').forEach((b) => b.classList.toggle('on', b.dataset.k === profile.power));
-  $('#powDesc').textContent = POWERS[profile.power].desc;
+  $('#powDesc').textContent = tt(POWERS[profile.power].desc);
 }
 function renderSound() {
   for (const id of ['#sndBtn', '#sndBtn2']) $(id).innerHTML = ic(A.isMuted() ? 'mute' : 'sound');
   for (const id of ['#musBtn', '#musBtn2']) $(id).style.opacity = A.isMusicOn() ? 1 : 0.4;
 }
 const myInfo = () => ({ name: profile.name || 'Oyuncu', char: profile.char, power: profile.power });
+
+// ---------------- Arkadaşlar (Firebase)
+async function openFriends() {
+  A.initAudio();
+  show('friends');
+  $('#frCode').textContent = social.code || '······';
+  renderFriends();
+  try {
+    await startOnline(myInfo());
+    $('#frCode').textContent = social.code;
+    renderFriends();
+  } catch (e) { $('#frList').innerHTML = `<div class="muted-dark">${esc(e.message)}</div>`; }
+}
+function renderFriends() {
+  if ($('#friends').classList.contains('hidden')) { updateFriendBadge(); return; }
+  const reqs = [...social.requests.entries()];
+  $('#frReqs').innerHTML = reqs.length ? `<div class="lbl">${tt('Arkadaşlık istekleri')}</div>` + reqs.map(([uid, r]) => `<div class="fr">${portrait(r.char | 0, 'em')}<span class="nm">${esc(r.name || 'Oyuncu')}<small>${tt('seni ekledi')}</small></span><button class="pill-btn ok" data-acc="${uid}">${ic('check')}</button><button class="pill-btn no" data-dec="${uid}">${ic('close')}</button></div>`).join('') : '';
+  const list = [...social.friends.values()].sort((a, b) => (b.on - a.on) || a.name.localeCompare(b.name, 'tr'));
+  $('#frList').innerHTML = list.length ? list.map((f) => `<div class="fr ${f.on ? 'on' : ''}">${portrait(f.char, 'em')}<span class="nm">${esc(f.name)}<small><i class="dot"></i>${f.on ? (f.room ? tt('Odada: {room}', { room: f.room }) : tt('Çevrimiçi')) : tt('Çevrimdışı')}</small></span>${f.on && f.room ? `<button class="pill-btn ok" data-join="${f.room}">${ic('play')} ${tt('Katıl')}</button>` : ''}<button class="pill-btn no" data-rm="${f.uid}" title="${tt('Arkadaşlıktan çıkar')}">${ic('trash')}</button></div>`).join('')
+    : `<div class="muted-dark">${tt('Henüz arkadaşın yok. Kodunu paylaş ya da arkadaşının kodunu yaz.')}</div>`;
+  updateFriendBadge();
+}
+function updateFriendBadge() {
+  const n = social.requests.size;
+  const b = $('#friendsBadge'); b.textContent = n; b.classList.toggle('hidden', !n);
+  if (G.screen === 'lobby') renderLobbyInvites();
+}
+social.onChange = () => renderFriends();
+social.onInvite = (inv) => showInvite(inv);
+function showInvite(inv) {
+  if (G.screen === 'game') { toast(tt('{name} seni {room} odasına çağırıyor', { name: inv.name, room: inv.room }), 4000); return; }
+  const box = $('#inviteBox');
+  box.querySelector('.txt').innerHTML = tt('{name} seni salına çağırıyor!', { name: `<b>${esc(inv.name)}</b>` });
+  box.classList.remove('hidden');
+  vibrate(40); A.sfxs.fartShort(1.2);
+  $('#invYes').onclick = () => { box.classList.add('hidden'); if (net.role !== 'local' || G.screen === 'lobby') closeNet(); enterLobby('client', inv.room); };
+  $('#invNo').onclick = () => box.classList.add('hidden');
+  clearTimeout(showInvite.t); showInvite.t = setTimeout(() => box.classList.add('hidden'), 15000);
+}
+function initFriendsScreen() {
+  $('#frBack').onclick = () => show(G.screen === 'lobby' ? 'lobby' : 'menu');
+  $('#frCopy').onclick = async () => {
+    const text = tt("Gas Story'de beni arkadaş ekle! Kodum: {code}", { code: social.code });
+    try { if (navigator.share) await navigator.share({ text }); else { await navigator.clipboard.writeText(social.code); toast(tt('Kod kopyalandı')); } } catch { /* vazgeçti */ }
+  };
+  $('#frAddIn').addEventListener('input', (e) => { e.target.value = e.target.value.toUpperCase().replace(/[^A-Z0-9]/g, ''); });
+  $('#frAddBtn').onclick = async () => {
+    const btn = $('#frAddBtn'); btn.disabled = true;
+    try { await startOnline(myInfo()); toast(await addFriendByCode($('#frAddIn').value, myInfo())); $('#frAddIn').value = ''; } catch (e) { toast(e.message, 3200); }
+    btn.disabled = false;
+  };
+  $('#frBox').addEventListener('click', async (e) => {
+    const t = e.target.closest('button'); if (!t) return;
+    try {
+      if (t.dataset.acc) { await acceptRequest(t.dataset.acc); toast(tt('Artık arkadaşsınız!')); }
+      else if (t.dataset.dec) await declineRequest(t.dataset.dec);
+      else if (t.dataset.join) { closeNet(); enterLobby('client', t.dataset.join); }
+      else if (t.dataset.rm) {
+        if (t.dataset.sure) await removeFriend(t.dataset.rm);
+        else { t.dataset.sure = '1'; t.classList.add('sure'); setTimeout(() => { delete t.dataset.sure; t.classList.remove('sure'); }, 2500); toast(tt('Silmek için tekrar bas')); }
+      }
+    } catch (err) { toast(err.message, 3000); }
+  });
+  $('#frDelete').onclick = async () => {
+    const b = $('#frDelete');
+    if (!b.dataset.sure) { b.dataset.sure = '1'; b.innerHTML = `<span>${ic('trash')} ${tt('Emin misin? Tekrar bas')}</span>`; setTimeout(() => { delete b.dataset.sure; b.innerHTML = `<span>${ic('trash')} ${tt('Online verilerimi sil')}</span>`; }, 3000); return; }
+    try { closeNet(); await deleteMyData(); toast(tt('Online verilerin silindi.')); $('#frCode').textContent = '······'; renderFriends(); } catch (e) { toast(e.message, 3500); }
+  };
+}
 
 // ---------------- Lobi
 const freeSlot = () => { for (let s = 0; s < 4; s++) if (!G.roster.some((r) => r.slot === s)) return s; return -1; };
@@ -119,7 +207,11 @@ function addBot() {
 }
 function pushLobby() {
   renderLobby();
-  if (net.role === 'host') broadcast({ t: 'lobby', roster: G.roster, level: G.level });
+  if (net.role === 'host') {
+    broadcast({ t: 'lobby', roster: G.roster, level: G.level });
+    const humans = G.roster.filter((r) => !r.bot).length;
+    updateRoomMeta({ n: humans, status: G.screen === 'lobby' ? 'lobby' : 'game', open: net.open && humans < 4 && G.screen === 'lobby' });
+  }
 }
 
 async function enterLobby(role, code) {
@@ -133,23 +225,29 @@ async function enterLobby(role, code) {
     G.screen = 'lobby'; show('lobby'); renderLobby();
     return;
   }
-  const btn = role === 'host' ? $('#hostBtn') : $('#joinBtn');
+  const btn = role === 'host' ? $('#hostBtn') : role === 'quick' ? $('#quickBtn') : $('#joinBtn');
   btn.disabled = true;
+  btn.classList.add('busy');
   try {
+    await startOnline(myInfo());
+    if (role === 'quick') {
+      setupHostHandlers(); setupClientHandlers();
+      const res = await quickMatch(myInfo());
+      role = res.role;
+      if (role === 'host') toast(tt('Açık oda bulunamadı, yeni oda kuruldu. Oyuncu bekleniyor…'), 3500);
+    } else if (role === 'host') await hostRoom({ open: false, hostName: myInfo().name });
+    else { setupClientHandlers(); await joinRoom(code, myInfo()); }
     if (role === 'host') {
-      await hostRoom();
       setupHostHandlers();
       addToRoster('host', myInfo());
       G.mySlot = 0;
-    } else {
-      setupClientHandlers();
-      await joinRoom(code, myInfo());
-    }
-    G.screen = 'lobby'; show('lobby'); renderLobby();
+    } else setupClientHandlers();
+    setRoom(net.code);
+    G.screen = 'lobby'; show('lobby'); renderLobby(); pushLobby();
   } catch (e) {
     toast(e.message || String(e), 3500);
     closeNet();
-  } finally { btn.disabled = false; }
+  } finally { btn.disabled = false; btn.classList.remove('busy'); }
 }
 
 function setupHostHandlers() {
@@ -163,7 +261,7 @@ function setupHostHandlers() {
     addToRoster(id, hello);
     pushLobby();
     A.sfxs.fartShort(1.3);
-    toast(`${hello.name || 'Biri'} katıldı!`);
+    toast(tt('{name} katıldı!', { name: hello.name || tt('Biri') }));
   };
   net.onLeave = (id) => {
     const r = G.roster.find((x) => x.owner === id);
@@ -172,34 +270,21 @@ function setupHostHandlers() {
       // Oyun sırasında ayrılanın yerine bot geçer
       r.bot = true; r.owner = 'bot';
       const p = G.sim?.players.find((q) => q.slot === r.slot); if (p) p.bot = true;
-      toast(`${r.name} ayrıldı, yerine bot geçti`);
+      toast(tt('{name} ayrıldı, yerine bot geçti', { name: r.name }));
     } else {
       G.roster = G.roster.filter((x) => x !== r);
-      toast(`${r.name} ayrıldı`);
+      toast(tt('{name} ayrıldı', { name: r.name }));
     }
     pushLobby();
   };
   net.onMsg = (d, id) => {
-    seen.set(id, performance.now());
     if (d.t === 'in') {
       const r = G.roster.find((x) => x.owner === id);
-      if (r) G.remoteInputs[r.slot] = { mx: +d.mx || 0, mz: +d.mz || 0, g: !!d.g };
+      if (r) G.remoteInputs[r.slot] = { turn: +d.turn || 0, g: !!d.g };
     }
   };
   net.onClose = (msg) => { toast(msg, 3500); leaveToMenu(); };
 }
-
-// Kopan bağlantıyı WebRTC'den önce fark etmek için: istemciler saniyede bir sinyal yollar.
-const seen = new Map();
-setInterval(() => {
-  if (net.role === 'client') sendToHost({ t: 'ping' });
-  if (net.role !== 'host') return;
-  const now = performance.now();
-  for (const id of [...net.conns.keys()]) {
-    if (!seen.has(id)) seen.set(id, now);
-    else if (now - seen.get(id) > 4500) { seen.delete(id); kick(id); net.onLeave?.(id); }
-  }
-}, 1000);
 
 function setupClientHandlers() {
   net.onMsg = (d) => {
@@ -217,7 +302,7 @@ function setupClientHandlers() {
     } else if (d.t === 'res') {
       G.results = d.r; showResults();
     } else if (d.t === 'deny') {
-      toast(d.reason, 3500); leaveToMenu();
+      toast(tt(d.reason), 3500); leaveToMenu();
     }
   };
   net.onClose = (msg) => { toast(msg, 3500); leaveToMenu(); };
@@ -226,34 +311,49 @@ function setupClientHandlers() {
 function renderLobby() {
   const role = net.role;
   const isBoss = role !== 'client';
-  $('#roomLbl').textContent = role === 'local' ? 'TEK BAŞINA' : 'ODA KODU';
+  $('#roomLbl').textContent = tt(role === 'local' ? 'TEK BAŞINA' : 'ODA KODU');
   $('#roomCode').innerHTML = role === 'local' ? ic('buoy') : net.code;
   $('#shareBtn').classList.toggle('hidden', role !== 'host');
-  $('#roomHelp').textContent = role === 'host'
+  $('#roomHelp').textContent = tt(role === 'host'
     ? 'Arkadaşların "Odaya Katıl" deyip bu kodu yazsın. Boş yerlere bot ekleyebilirsin.'
-    : role === 'client' ? 'Bağlandın! Sal hazırlanıyor…' : 'Botlar sana takım arkadaşlığı yapar. İstediğin kadar ekle ya da çıkar.';
+    : role === 'client' ? 'Bağlandın! Sal hazırlanıyor…' : 'Botlar sana takım arkadaşlığı yapar. İstediğin kadar ekle ya da çıkar.');
   let html = '';
   for (let s = 0; s < 4; s++) {
     const r = G.roster.find((x) => x.slot === s);
     if (!r) {
-      html += `<div class="slot empty" style="--c:${SLOT_COLORS[s]}"><span>Boş koltuk</span>${isBoss ? `<button class="add" data-add="1">${ic('bot')} Bot ekle</button>` : ''}</div>`;
+      html += `<div class="slot empty" style="--c:${SLOT_COLORS[s]}"><span>${tt('Boş koltuk')}</span>${isBoss ? `<button class="add" data-add="1">${tile('bot')} ${tt('Bot ekle')}</button>` : ''}</div>`;
       continue;
     }
     const me = r.owner === (role === 'client' ? net.myId : 'host') && !r.bot;
-    const tag = r.bot ? 'Bot' : me ? 'Sen' : 'Online';
+    const tag = tt(r.bot ? 'Bot' : me ? 'Sen' : 'Online');
     const canKick = isBoss && !me;
     html += `<div class="slot" style="--c:${SLOT_COLORS[s]}">${portrait(r.char, 'em')}
-      <span class="nm">${esc(r.name)}<small>${tag} · ${POWERS[r.power].name}</small></span><span class="pw">${ic(POWERS[r.power].icon)}</span>
+      <span class="nm">${esc(r.name)}<small>${tag} · ${tt(POWERS[r.power].name)}</small></span><span class="pw">${tile(POWERS[r.power].icon)}</span>
       ${canKick ? `<button class="x" data-kick="${s}">${ic('close')}</button>` : ''}</div>`;
   }
   $('#roster').innerHTML = html;
   $('#levels').innerHTML = LEVELS.map((L, i) => {
     const best = store.get('best-' + i, null);
-    return `<button class="lvl ${i === G.level ? 'on' : ''}" data-l="${i}" ${isBoss ? '' : 'disabled'}><span class="e">${ic(L.icon)}</span>${L.name}<small>${best ? ic('trophy') + ' ' + fmtTime(best.time) + ' · ' + ic('star') + best.stars : 'Rekor yok'}</small></button>`;
+    return `<button class="lvl ${i === G.level ? 'on' : ''}" data-l="${i}" ${isBoss ? '' : 'disabled'}><span class="e">${tile(L.icon)}</span>${tt(L.name)}<small>${best ? ic('trophy') + ' ' + fmtTime(best.time) + ' · ' + ic('star') + best.stars : tt('Rekor yok')}</small></button>`;
   }).join('');
   $('#startBtn').classList.toggle('hidden', !isBoss);
   $('#waitHost').classList.toggle('hidden', isBoss);
+  renderLobbyInvites();
 }
+// Oda kurucusu çevrimiçi arkadaşlarını tek dokunuşla çağırabilir
+function renderLobbyInvites() {
+  const box = $('#lobbyFriends');
+  const online = [...social.friends.values()].filter((f) => f.on && f.room !== net.code);
+  const show_ = net.role === 'host' && online.length > 0;
+  box.classList.toggle('hidden', !show_);
+  if (!show_) return;
+  box.innerHTML = `<div class="lbl">${tt('Çevrimiçi arkadaşların')}</div>` + online.map((f) => `<div class="fr">${portrait(f.char, 'em')}<span class="nm">${esc(f.name)}<small>${tt(f.room ? 'Başka odada' : 'Çevrimiçi')}</small></span><button class="pill-btn" data-inv="${f.uid}">${ic('send')} ${tt('Davet et')}</button></div>`).join('');
+}
+$('#lobbyFriends').addEventListener('click', async (e) => {
+  const b = e.target.closest('[data-inv]'); if (!b) return;
+  b.disabled = true;
+  try { await inviteFriend(b.dataset.inv, net.code, myInfo()); b.innerHTML = ic('check') + ' ' + tt('Davet edildi'); A.sfxs.click(); } catch (err) { toast(err.message); b.disabled = false; }
+});
 $('#roster').addEventListener('click', (e) => {
   const add = e.target.closest('[data-add]'), k = e.target.closest('[data-kick]');
   if (add) { addBot(); pushLobby(); A.sfxs.click(); }
@@ -272,19 +372,20 @@ $('#levels').addEventListener('click', (e) => {
 $('#startBtn').onclick = () => hostStart(G.level);
 $('#lobbyBack').onclick = () => leaveToMenu();
 $('#shareBtn').onclick = async () => {
-  const text = `Gas Story'de salıma gel! Oda kodu: ${net.code}`;
-  try { if (navigator.share) await navigator.share({ text }); else { await navigator.clipboard.writeText(net.code); toast('Kod kopyalandı: ' + net.code); } } catch { /* vazgeçti */ }
+  const text = tt("Gas Story'de salıma gel! Oda kodu: {code}", { code: net.code });
+  try { if (navigator.share) await navigator.share({ text }); else { await navigator.clipboard.writeText(net.code); toast(tt('Kod kopyalandı: {code}', { code: net.code })); } } catch { /* vazgeçti */ }
 };
 
 function hostStart(level) {
   if (!G.roster.length) return;
   const roster = G.roster.map((r) => ({ ...r }));
-  if (net.role === 'host') broadcast({ t: 'start', level, roster });
+  if (net.role === 'host') { broadcast({ t: 'start', level, roster }); updateRoomMeta({ status: 'game', open: false }); }
   startGame(level, roster);
 }
 
 function leaveToMenu() {
   closeNet();
+  setRoom(null);
   teardownGame();
   startAttract();
   G.screen = 'menu'; show('menu');
@@ -339,7 +440,7 @@ function startGame(level, roster) {
     const el = document.createElement('div');
     el.className = 'tag' + (p.slot === G.mySlot ? ' me' : '');
     el.style.setProperty('--c', SLOT_COLORS[p.slot]);
-    el.innerHTML = `<span class="ch" style="width:0"></span>${esc(p.slot === G.mySlot ? 'SEN' : p.name)}`;
+    el.innerHTML = `<span class="ch" style="width:0"></span>${esc(p.slot === G.mySlot ? tt('SEN') : p.name)}`;
     $('#tags').appendChild(el);
     return el;
   });
@@ -347,7 +448,7 @@ function startGame(level, roster) {
   const burp = me?.power === 'burp';
   $('#gasBtn').classList.toggle('burp', burp);
   $('#gasEmoji').innerHTML = ic(burp ? 'burp' : 'fart');
-  $('#gasLabel').textContent = burp ? 'GEĞİR' : 'OSUR';
+  $('#gasLabel').textContent = tt(burp ? 'GEĞİR' : 'OSUR');
   $('#progCps').innerHTML = G.sim.cps.map((c) => `<i style="left:${(c.s / G.sim.T.finishS) * 100}%"></i>`).join('');
   $('#hud').classList.remove('hidden');
   resetInput();
@@ -355,7 +456,7 @@ function startGame(level, roster) {
   G.screen = 'game';
   document.body.classList.add('playing');
   A.setAmbient(true);
-  showHint(LEVELS[level].name);
+  showHint(tt(LEVELS[level].name));
 }
 
 // ---------------- Olaylar (ses + efekt)
@@ -381,36 +482,36 @@ function handleEvent(e) {
       const pos = c ? c.root.getWorldPosition(new THREE.Vector3()) : rp;
       FX.splash(pos.x, r.y, pos.z, 20, 1);
       A.sfxs.splash(); A.sfxs.whoa(CHARS[charOf(e.slot).p.char].pitch);
-      FX.floatText(pos.clone().setY(pos.y + 1.5), isMine(e.slot) ? 'Suya düştün! Sala yüz!' : 'ŞAPŞAL!', { color: '#8fd3ff' });
+      FX.floatText(pos.clone().setY(pos.y + 1.5), tt(isMine(e.slot) ? 'Suya düştün! Sala yüz!' : 'ŞAPŞAL!'), { color: '#8fd3ff' });
       if (isMine(e.slot)) vibrate(60);
       break;
     }
-    case 'climb': A.sfxs.climb(); FX.floatText(headPos(e.slot).clone(), 'Hop!', { color: '#b6f05a', size: 0.8 }); break;
-    case 'rescue': A.sfxs.climb(); FX.floatText(headPos(e.slot).clone(), ic('buoy') + ' Kurtarıldı', { color: '#fff', size: 0.8 }); break;
+    case 'climb': A.sfxs.climb(); FX.floatText(headPos(e.slot).clone(), tt('Hop!'), { color: '#b6f05a', size: 0.8 }); break;
+    case 'rescue': A.sfxs.climb(); FX.floatText(headPos(e.slot).clone(), ic('buoy') + ' ' + tt('Kurtarıldı'), { color: '#fff', size: 0.8 }); break;
     case 'burp': burpFx(e); break;
-    case 'blown': FX.floatText(headPos(e.slot).clone(), 'UÇTUUU!', { color: '#ffd84d', size: 0.9 }); if (isMine(e.slot)) vibrate(40); break;
+    case 'blown': FX.floatText(headPos(e.slot).clone(), tt('UÇTUUU!'), { color: '#ffd84d', size: 0.9 }); if (isMine(e.slot)) vibrate(40); break;
     case 'stink': FX.floatText(headPos(e.slot).clone(), ic('sick'), { size: 1.4 }); A.sfxs.ugh(); break;
     case 'bump': A.sfxs.bump(); G.shake = Math.max(G.shake, 0.2); vibrate(15); break;
     case 'hit':
       A.sfxs.hit(); FX.sparks(rp.x, rp.y, rp.z, 0xff5a5f, 20);
-      banner(ic('boom') + ' DELİNDİ!'); G.shake = 0.7; vibrate(90); flashHearts();
+      banner(ic('boom') + ' ' + tt('DELİNDİ!')); G.shake = 0.7; vibrate(90); flashHearts();
       break;
     case 'pop':
       A.sfxs.pop(); FX.splash(rp.x, r.y, rp.z, 40, 1.5);
-      banner(ic('boom') + ' PATLADI!<small>kontrol noktasına dönülüyor</small>', 2400); G.shake = 1.1; vibrate(250); flashHearts();
+      banner(ic('boom') + ` ${tt('PATLADI!')}<small>${tt('kontrol noktasına dönülüyor')}</small>`, 2400); G.shake = 1.1; vibrate(250); flashHearts();
       break;
     case 'capsize':
       A.sfxs.capsize(); FX.splash(rp.x, r.y, rp.z, 40, 1.4);
-      banner('DEVRİLDİNİZ!<small>dengeyi koruyun</small>', 1800); G.shake = 0.8; vibrate(160); flashHearts();
+      banner(`${tt('DEVRİLDİNİZ!')}<small>${tt('dengeyi koruyun')}</small>`, 1800); G.shake = 0.8; vibrate(160); flashHearts();
       break;
     case 'respawn': FX.clearFloaters(); break;
     case 'star': { const p = objPos(e.id); FX.sparks(p.x, p.y, p.z, 0xffd23f, 18); A.sfxs.star(); FX.floatText(p, '+' + ic('star'), { color: '#ffd23f' }); vibrate(10); break; }
-    case 'bean': { const p = objPos(e.id); FX.sparks(p.x, p.y, p.z, 0xa6e22e, 18); A.sfxs.bean(); FX.floatText(p, ic('bean') + ' FASULYE! süper osuruk', { color: '#b6f05a', size: 0.8, life: 1.8 }); break; }
-    case 'soda': { const p = objPos(e.id); FX.sparks(p.x, p.y, p.z, 0x6fd0ff, 18); A.sfxs.soda(); FX.floatText(p, ic('soda') + ' GAZOZ! süper geğirme', { color: '#ffd84d', size: 0.8, life: 1.8 }); break; }
-    case 'cp': A.sfxs.cp(); banner(ic('check') + ' KONTROL NOKTASI', 1300); break;
-    case 'hint': showHint(e.text); break;
+    case 'bean': { const p = objPos(e.id); FX.sparks(p.x, p.y, p.z, 0xa6e22e, 18); A.sfxs.bean(); FX.floatText(p, ic('bean') + ' ' + tt('FASULYE! süper osuruk'), { color: '#b6f05a', size: 0.8, life: 1.8 }); break; }
+    case 'soda': { const p = objPos(e.id); FX.sparks(p.x, p.y, p.z, 0x6fd0ff, 18); A.sfxs.soda(); FX.floatText(p, ic('soda') + ' ' + tt('GAZOZ! süper geğirme'), { color: '#ffd84d', size: 0.8, life: 1.8 }); break; }
+    case 'cp': A.sfxs.cp(); banner(ic('check') + ' ' + tt('KONTROL NOKTASI'), 1300); break;
+    case 'hint': showHint(tt(e.text)); break;
     case 'land': A.sfxs.waterfall(); FX.splash(rp.x, r.y, rp.z, 36, 1.3); G.shake = 0.9; vibrate(70); break;
-    case 'finish': A.sfxs.win(); banner(ic('flag') + ' BİTİŞ!', 2200); vibrate(120); break;
+    case 'finish': A.sfxs.win(); banner(ic('flag') + ' ' + tt('BİTİŞ!'), 2200); vibrate(120); break;
   }
 }
 function burpFx(e) {
@@ -421,7 +522,7 @@ function burpFx(e) {
   FX.burpBurst(pos.x, pos.y, pos.z, dx, dz, e.k);
   if (quiet()) return;
   A.burp(e.k, CHARS[p.char].pitch);
-  FX.floatText(pos.clone().setY(pos.y + 0.6), e.k > 0.75 ? 'BÖĞĞĞĞ!!' : e.k > 0.4 ? 'BÖĞĞ!' : 'böğ', { color: '#ffd84d', size: 0.8 + e.k * 0.7 });
+  FX.floatText(pos.clone().setY(pos.y + 0.6), tt(e.k > 0.75 ? 'BÖĞĞĞĞ!!' : e.k > 0.4 ? 'BÖĞĞ!' : 'böğ'), { color: '#ffd84d', size: 0.8 + e.k * 0.7 });
   G.shake = Math.max(G.shake, 0.15 + e.k * 0.45);
   if (isMine(e.slot)) vibrate(30 + e.k * 60);
 }
@@ -436,9 +537,9 @@ function computeResults() {
   const ps = s.players;
   const top = (f) => ps.reduce((a, b) => (f(b) > f(a) ? b : a), ps[0]);
   const awards = [];
-  const gasKing = top((p) => p.stat.gas); if (gasKing.stat.gas > 1) awards.push(`${ic('crown')} Gaz Kralı: <b>${esc(gasKing.name)}</b> (${gasKing.stat.gas.toFixed(0)} pırt puanı)`);
-  const swimmer = top((p) => p.stat.falls); if (swimmer.stat.falls > 0) awards.push(`${ic('water')} Su Perisi: <b>${esc(swimmer.name)}</b> (${swimmer.stat.falls} kez suya düştü)`);
-  const villain = top((p) => p.stat.annoy); if (villain.stat.annoy > 0) awards.push(`${ic('devil')} Dostluk Bozan: <b>${esc(villain.name)}</b> (${villain.stat.annoy} arkadaşını uçurdu/kokuttu)`);
+  const gasKing = top((p) => p.stat.gas); if (gasKing.stat.gas > 1) awards.push(`${tile('crown')} ` + tt('Gaz Kralı: <b>{name}</b> ({n} pırt puanı)', { name: esc(gasKing.name), n: gasKing.stat.gas.toFixed(0) }));
+  const swimmer = top((p) => p.stat.falls); if (swimmer.stat.falls > 0) awards.push(`${tile('water')} ` + tt('Su Perisi: <b>{name}</b> ({n} kez suya düştü)', { name: esc(swimmer.name), n: swimmer.stat.falls }));
+  const villain = top((p) => p.stat.annoy); if (villain.stat.annoy > 0) awards.push(`${tile('devil')} ` + tt('Dostluk Bozan: <b>{name}</b> ({n} arkadaşını uçurdu/kokuttu)', { name: esc(villain.name), n: villain.stat.annoy }));
   return { level: G.level, time, stars: s.stars, total: s.totalStars, deaths: s.deaths, capsizes: s.capsizes, falls: s.falls, medal, awards, prevBest: best };
 }
 function showResults() {
@@ -447,20 +548,23 @@ function showResults() {
   let isNew = false;
   if (!R.prevBest || R.time < R.prevBest.time) { isNew = true; store.set('best-' + R.level, { time: R.time, stars: Math.max(R.stars, R.prevBest?.stars || 0) }); }
   else if (R.stars > R.prevBest.stars) store.set('best-' + R.level, { ...R.prevBest, stars: R.stars });
-  $('#resTitle').textContent = `${LEVELS[R.level].name} bitti!`;
-  $('#resMedal').innerHTML = ic(R.medal);
+  $('#resTitle').textContent = tt('{name} bitti!', { name: tt(LEVELS[R.level].name) });
+  $('#resMedal').innerHTML = tile('medal', R.medal, 'big');
   $('#resStats').innerHTML = `
-    <div class="${isNew ? 'new' : ''}">${fmtTime(R.time)}<small>${isNew ? ic('trophy') + ' YENİ REKOR' : 'süre (par ' + LEVELS[R.level].par + ' sn)'}</small></div>
-    <div>${ic('star')} ${R.stars}/${R.total}<small>yıldız</small></div>
-    <div>${ic('boom')} ${R.deaths}<small>patlama</small></div>
-    <div>${ic('water')} ${R.falls}<small>suya düşme · ${R.capsizes} devrilme</small></div>`;
+    <div class="${isNew ? 'new' : ''}">${fmtTime(R.time)}<small>${isNew ? ic('trophy') + ' ' + tt('YENİ REKOR') : tt('süre (par {par} sn)', { par: LEVELS[R.level].par })}</small></div>
+    <div>${ic('star')} ${R.stars}/${R.total}<small>${tt('yıldız')}</small></div>
+    <div>${ic('boom')} ${R.deaths}<small>${tt('patlama')}</small></div>
+    <div>${ic('water')} ${R.falls}<small>${tt('suya düşme · {n} devrilme', { n: R.capsizes })}</small></div>`;
   $('#resAwards').innerHTML = R.awards.map((a) => `<div class="award">${a}</div>`).join('');
   const boss = net.role !== 'client';
   $('#resBtns').classList.toggle('hidden', !boss);
   $('#resWait').classList.toggle('hidden', boss);
-  $('#nextBtn').innerHTML = R.level < LEVELS.length - 1 ? `<span>Sonraki Bölüm ${ic('next')}</span><small>${LEVELS[R.level + 1].name}</small>` : `<span>${ic('again')} Baştan Başla</span><small>${LEVELS[0].name}</small>`;
+  $('#nextBtn').innerHTML = R.level < LEVELS.length - 1 ? `<span>${tt('Sonraki Bölüm')} ${ic('next')}</span><small>${tt(LEVELS[R.level + 1].name)}</small>` : `<span>${ic('again')} ${tt('Baştan Başla')}</span><small>${tt(LEVELS[0].name)}</small>`;
   G.screen = 'results';
   show('results');
+  // Puan tablosu görüldükten sonra bölüm sonu reklamı
+  clearTimeout(showResults.adT);
+  showResults.adT = setTimeout(() => { if (G.screen === 'results') showLevelEndAd(); }, 2200);
   $('#hud').classList.add('hidden');
   document.body.classList.remove('playing');
 }
@@ -481,7 +585,7 @@ $('#pauseBtn').onclick = () => {
   if (net.role === 'local') G.paused = true;
   resetInput();
   $('#restartBtn').classList.toggle('hidden', net.role === 'client');
-  $('#quitBtn').innerHTML = net.role === 'client' ? `<span>${ic('door')} Odadan Ayrıl</span>` : `<span>${ic('home')} Lobiye Dön</span>`;
+  $('#quitBtn').innerHTML = net.role === 'client' ? `<span>${ic('door')} ${tt('Odadan Ayrıl')}</span>` : `<span>${ic('home')} ${tt('Lobiye Dön')}</span>`;
   show('pause');
 };
 $('#resumeBtn').onclick = () => { G.paused = false; show(null); };
@@ -497,6 +601,17 @@ export function onBack() {
   return false;
 }
 
+// Parmağın sağ/sol hareketini, karakterin kenarda dönme yönüne çevir: karakter ekranda parmakla aynı yöne gider.
+function screenTurn(sim, x) {
+  const me = sim.players.find((p) => p.slot === G.mySlot);
+  if (!me || !me.onRaft || Math.abs(x) < 0.05 || G.attract) { G.turnSign = 0; return 0; }
+  const [tx, tz] = rot(-Math.sin(me.ang), Math.cos(me.ang), sim.raft.a); // açı artınca dünyada gidilen yön
+  const d = tx * Math.cos(G.camH) + tz * Math.sin(G.camH);                // bunun ekrandaki sağa bileşeni
+  // Salın en sol/en sağ noktasında yön belirsizleşir; parmak kalkana kadar son yön korunur
+  if (!G.turnSign || Math.abs(d) > 0.3) G.turnSign = Math.sign(d) || G.turnSign || 1;
+  return Math.max(-1, Math.min(1, x)) * G.turnSign;
+}
+
 // ---------------- Kare döngüsü
 const STEP = 1 / 60;
 let last = performance.now();
@@ -507,11 +622,12 @@ function frame(now) {
   const sim = G.sim;
   if (sim) {
     const inp = readInput();
-    const ch = G.camH, fx = Math.sin(ch), fz = -Math.cos(ch), rx = Math.cos(ch), rz = Math.sin(ch);
-    const my = { mx: rx * inp.x + fx * inp.y, mz: rz * inp.x + fz * inp.y, g: inp.g && G.screen === 'game' };
+    const my = { turn: screenTurn(sim, inp.x), g: inp.g && G.screen === 'game' };
     if (net.role === 'client' && !G.attract) {
       G.inAcc += dt;
-      if (G.inAcc >= 1 / 30) { G.inAcc = 0; sendToHost({ t: 'in', mx: +my.mx.toFixed(2), mz: +my.mz.toFixed(2), g: my.g }); }
+      const changed = my.turn !== G.lastIn.turn || my.g !== G.lastIn.g;
+      if (changed || G.inAcc >= 0.25) { G.inAcc = 0; G.lastIn = my; sendToHost({ t: 'in', turn: +my.turn.toFixed(2), g: my.g }); }
+      sim.predictTurn(G.mySlot, my.turn, dt);
       sim.clientUpdate(dt);
     } else if (!G.paused) {
       const inputs = { ...G.remoteInputs };
@@ -523,7 +639,7 @@ function frame(now) {
       if (net.role === 'host' && !G.attract) {
         G.netEvents.push(...evs);
         G.snapAcc += dt;
-        if (G.snapAcc >= 1 / 20) { G.snapAcc = 0; const s = sim.snapshot(); s.ev = G.netEvents.splice(0); broadcast({ t: 'snap', s }); }
+        if (G.snapAcc >= 1 / 12) { G.snapAcc = 0; const s = sim.snapshot(); s.ev = G.netEvents.splice(0); broadcast({ t: 'snap', s }); }
       }
     }
     renderGame(dt, t);
@@ -551,7 +667,7 @@ function renderGame(dt, t) {
     const c = G.chars[i];
     if (p.onRaft) {
       if (c.root.parent !== G.raft.tilt) G.raft.tilt.add(c.root);
-      c.root.position.set(p.lx, G.raft.deckY, p.lz);
+      c.root.position.set(p.lx, G.raft.rimY, p.lz);
       c.root.rotation.y = -p.face;
     } else {
       if (c.root.parent !== scene) scene.add(c.root);
@@ -568,7 +684,7 @@ function renderGame(dt, t) {
       while (G.puffAcc[p.slot] >= 1) { G.puffAcc[p.slot]--; FX.fartPuff(_v.x, _v.y, _v.z, dx, dz, r.vx, r.vz, p.boost > 0); }
       if (!G.fartH[p.slot] && !quiet()) {
         G.fartH[p.slot] = A.startFart(CHARS[p.char].pitch, isMine(p.slot) ? 1 : 0.75);
-        if (Math.random() < 0.35) FX.floatText(_v.clone().setY(_v.y + 1.2), ['PIRRRT!', 'BRRRT!', 'PÖRRT!', 'FıSSS…'][Math.floor(Math.random() * 4)], { color: '#b6f05a', size: 0.8 });
+        if (Math.random() < 0.35) FX.floatText(_v.clone().setY(_v.y + 1.2), tt(['PIRRRT!', 'BRRRT!', 'PÖRRT!', 'FıSSS…'][Math.floor(Math.random() * 4)]), { color: '#b6f05a', size: 0.8 });
       }
       if (isMine(p.slot) && Math.random() < dt * 8) vibrate(8);
     } else if (G.fartH[p.slot]) { G.fartH[p.slot].stop(); delete G.fartH[p.slot]; }
@@ -663,9 +779,12 @@ function updateHud() {
 
 // ---------------- Başlat
 hydrateIcons();
+applyLang();
 buildMenu();
+initFriendsScreen();
 startAttract();
 initNative(onBack);
+initAds({ pause: () => A.pauseAudio(), resume: () => A.resumeAudio() });
 document.addEventListener('pointerdown', () => A.initAudio(), { capture: true });
 document.addEventListener('keydown', () => A.initAudio(), { capture: true });
 requestAnimationFrame((n) => { last = n; frame(n); setTimeout(() => $('#loading').classList.add('gone'), 150); });

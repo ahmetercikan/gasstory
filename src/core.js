@@ -9,7 +9,7 @@ export { clamp, lerp, TAU, angDiff, rot, rng, hash1, vnoise };
 export const isTouch = matchMedia('(pointer: coarse)').matches || 'ontouchstart' in window;
 const lowEnd = isTouch && (navigator.hardwareConcurrency || 4) <= 4;
 export const QUALITY = {
-  pixelRatio: Math.min(devicePixelRatio, isTouch ? (lowEnd ? 1.25 : 1.75) : 2),
+  pixelRatio: Math.min(devicePixelRatio, lowEnd ? 1.5 : 2),
   shadow: lowEnd ? 1024 : 2048,
   trees: lowEnd ? 0.5 : 1,
 };
@@ -86,6 +86,32 @@ export function toon(color, extra) {
   if (!matCache.has(key)) matCache.set(key, new THREE.MeshToonMaterial({ color, gradientMap: GRAD, ...extra }));
   return matCache.get(key);
 }
+// Çizgi film dış hattı: yüzeyi normal yönünde biraz şişirilmiş, arkadan çizilen koyu kopya.
+const outlineCache = new Map();
+export function outlineMat(t = 0.025, color = 0x23324d) {
+  const key = t + ':' + color;
+  if (!outlineCache.has(key)) {
+    const m = new THREE.MeshBasicMaterial({ color, side: THREE.BackSide });
+    m.onBeforeCompile = (sh) => {
+      sh.vertexShader = sh.vertexShader.replace('#include <begin_vertex>', `vec3 transformed = position + normal * ${t.toFixed(4)};`);
+    };
+    m.customProgramCacheKey = () => 'outline' + key;
+    outlineCache.set(key, m);
+  }
+  return outlineCache.get(key);
+}
+export function addOutline(obj, t = 0.025, skip = () => false) {
+  const list = [];
+  obj.traverse((o) => { if (o.isMesh && !o.isInstancedMesh && !o.userData.outline && !skip(o)) list.push(o); });
+  for (const m of list) {
+    const o = new THREE.Mesh(m.geometry, outlineMat(t));
+    o.userData.outline = true; o.castShadow = false; o.receiveShadow = false;
+    o.raycast = () => {};
+    m.add(o);
+  }
+  return obj;
+}
+
 export function toonNew(opts) { return new THREE.MeshToonMaterial({ gradientMap: GRAD, ...opts }); }
 export function mesh(geo, color, { cast = true, receive = false, mat } = {}) {
   const m = new THREE.Mesh(geo, mat || toon(color));

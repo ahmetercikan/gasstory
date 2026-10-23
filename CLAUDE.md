@@ -18,9 +18,18 @@
   - `fx.js` parçacıklar/yazılar, `audio.js` sesler, `input.js` dokunmatik joystick + gaz düğmesi (klavye/gamepad de),
     `net.js` PeerJS, `native.js` Capacitor kabuğu, `main.js` ekranlar + oyun döngüsü + kamera + HUD.
 - **Açı kuralı:** yerel "ileri" = (0,-1); açı a'daki ileri = (sin a, -cos a). three nesnelerinde `rotation.y = -a`.
-- **Online:** oda kuran cihaz oyunu yönetir (host-otoriter, 60 Hz sim, 20 Hz anlık görüntü), istemciler 30 Hz
-  giriş yollar. Ücretsiz PeerJS sunucusu (0.peerjs.com) eşleştirme için kullanılır; internet gerekir.
-  İstemci 4,5 sn sessiz kalırsa kopmuş sayılır, yerine bot geçer.
+- **Kontrol (1.1.0):** karakterler salın kenarında (açı `ang`, `RIM_R`) durur; oyuncu yalnızca sağa/sola kaydırır
+  (`input.js` sürgü, klavyede A/D). `main.js → screenTurn()` parmağın ekran yönünü kenardaki dönme yönüne çevirir.
+  Gaz salı karakterin olduğu taraftan merkeze doğru iter (tork yok). Alçak taraftakiler `SLIP_TILT` aşılınca suya kayar.
+- **Online (Firebase, proje `gas-story`, RTDB europe-west1):** `firebase.js` (ayar + anonim giriş), `online.js`
+  (profil, 6 haneli arkadaş kodu, çevrimiçi durumu, istek/kabul, davet, "Online verilerimi sil"), `net.js` (odalar:
+  `rooms/{kod}` — host oyunu yönetir, 12 Hz `snap`, istemci `in/{uid}`, mesajlar `msgs`, `dm`; Hızlı Eşleş `open` alanıyla).
+  Kurallar `database.rules.json` (Firebase konsolunda yayınlandı; değişirse konsola yeniden yapıştır).
+- **Dil:** `i18n.js` — Türkçe metin anahtar, `EN` sözlüğü İngilizce. Telefon dili Türkçe değilse İngilizce açılır,
+  menüde TR/EN düğmesi. Yeni metin eklerken `tt('…')` (main.js) / `t('…')` ile sar ve `EN`'e ekle.
+- **Reklam:** `ads.js` (AdMob, `@capacitor-community/admob`). Puan tablosundan ~2 sn sonra geçiş reklamı, en az 45 sn
+  arayla; web'de reklam yok. Uygulama kimliği AndroidManifest'te. AB izin mesajı AdMob → Gizlilik ve mesajlaşma'da yayında.
+- **Simgeler:** Çizio dili — `icons.js` lucide çizgi simgeleri, `tile()` renkli karo.
 - **Sesler:** `public/sfx/*.mp3` ElevenLabs ses efektleriyle üretildi (`scripts/make-sfx.mjs`); anahtar
   `~/Sayio/.env.local` içinden okunur, bu projeye kopyalanmaz. Dosya yoksa `audio.js` sentez sese düşer.
 - **Yayın:** GitHub `ahmetercikan/gasstory` (SSH ile push). `main`'e gönderilince Actions botlarla bölüm testi +

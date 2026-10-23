@@ -16,7 +16,7 @@ export const LEVELS = [
       { L: 40, turn: 0, slope: -0.03, w: 7, cur: 3.4 },
     ],
     objs: [
-      { t: 'hint', s: 2, text: 'Osuran baktığı yöne iter, geğiren tersine fırlatır!' },
+      { t: 'hint', s: 2, text: 'Gaz, salı durduğun taraftan karşı tarafa iter!' },
       { t: 'hint', s: 30, text: 'Hepiniz bir tarafa toplanmayın, sal devrilir!' },
       { t: 'rock', s: 35, u: -3.5, r: 1.2 }, { t: 'rock', s: 48, u: 3.6, r: 1.3 },
       { t: 'bean', s: 55, u: -2 }, { t: 'star', s: 62, u: 2.8 },

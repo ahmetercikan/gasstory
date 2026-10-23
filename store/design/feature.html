@@ -19,6 +19,7 @@
   .pill { left: 64px; top: 380px; display: flex; gap: 10px; }
   .pill span svg { width: 26px; height: 26px; vertical-align: -6px; margin-right: 4px; }
   .pill span { background: rgba(255,255,255,.85); border: 2px solid #fff; border-radius: 20px; padding: 4px 16px; font-size: 22px; font-weight: 800; box-shadow: 0 6px 14px rgba(20,60,110,.12); }
+  .ic { width: 1.2em; height: 1.2em; }
   .m { filter: drop-shadow(0 16px 20px rgba(20,60,110,.25)); }
   .ground { left: 470px; bottom: -150px; width: 760px; height: 260px; border-radius: 50%; background: linear-gradient(#bfe6ff, #a6dbff); }
 </style></head>
@@ -29,10 +30,15 @@
   <div class="abs logo"><img src="/assets/icon.png"><b><i>Gas</i> Story</b></div>
   <div class="abs tag">Osur, geğir, dengede kal!</div>
   <div class="abs sub">Arkadaşlarınla aynı salda dostluk bozan rafting macerası</div>
-  <div class="abs pill"><span data-i="people">1-4 kişi</span><span data-i="online">Online</span><span data-i="bot">Botlarla</span></div>
+  <div class="abs pill"><span data-i="people">1-4 kişi</span><span data-i="globe">Online</span><span data-i="bot">Botlarla</span></div>
   <img class="abs m" src="/store/design/img/mascot-hippo.png" style="left:545px;top:90px;width:430px">
   <img class="abs m" src="/store/design/img/mascot-bear.png" style="left:705px;top:125px;width:380px">
   <img class="abs m" src="/store/design/img/mascot-frog-fart.png" style="left:430px;top:60px;width:520px">
-  <script type="module">import { ic } from '/src/icons.js'; document.querySelectorAll('[data-i]').forEach((el) => el.insertAdjacentHTML('afterbegin', ic(el.dataset.i)));</script>
+  <script type="module">import { ic } from '/src/icons.js'; document.querySelectorAll('[data-i]').forEach((el) => el.insertAdjacentHTML('afterbegin', ic(el.dataset.i)));
+if (new URLSearchParams(location.search).get('lang') === 'en') {
+  const EN = { 'Osur, geğir, dengede kal!': 'Fart, burp, stay balanced!', 'Arkadaşlarınla aynı salda dostluk bozan rafting macerası': 'The friendship-ruining rafting adventure for you and your friends', '1-4 kişi': '1-4 players', 'Botlarla': 'With bots' };
+  const w = document.createTreeWalker(document.body, NodeFilter.SHOW_TEXT); const ns = []; while (w.nextNode()) ns.push(w.currentNode);
+  for (const n of ns) { const k = n.nodeValue.trim(); if (EN[k]) n.nodeValue = n.nodeValue.replace(k, EN[k]); }
+}</script>
   <script>document.fonts.ready.then(() => Promise.all([...document.images].map((i) => i.decode().catch(() => {})))).then(() => setTimeout(() => (window.done = true), 400));</script>
 </body></html>
