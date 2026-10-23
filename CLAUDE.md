@@ -23,3 +23,14 @@
   İstemci 4,5 sn sessiz kalırsa kopmuş sayılır, yerine bot geçer.
 - **Sesler:** `public/sfx/*.mp3` ElevenLabs ses efektleriyle üretildi (`scripts/make-sfx.mjs`); anahtar
   `~/Sayio/.env.local` içinden okunur, bu projeye kopyalanmaz. Dosya yoksa `audio.js` sentez sese düşer.
+- **Yayın:** GitHub `ahmetercikan/gasstory` (SSH ile push). `main`'e gönderilince Actions botlarla bölüm testi +
+  derleme yapıp GitHub Pages'e yayınlar (https://ahmetercikan.github.io/gasstory/, gizlilik: `/gizlilik.html`).
+  Commit mesajları Türkçe.
+- **Android mağaza:** paket `com.ahmetercikan.gasstory` (değiştirilemez). `npm run aab` → imzalı
+  `android/app/build/outputs/bundle/release/app-release.aab`. İmza: `android/gasstory-release.keystore` +
+  `android/keystore.properties` (23 Ekim 2026'da oluşturuldu, git'e girmez, **yedeklenmeli**). Her yüklemede
+  `android/app/build.gradle` → `versionCode` +1. Mağaza metinleri ve form cevapları: `store/play-metin.md`.
+- **Mağaza görselleri:** kullanıcının verdiği örnek tasarım (Calemio) düzeninde kesintisiz 3'lü panorama:
+  `store/design/panorama.html` (1: maskot + başlık, 2: logo + eğik telefon, 3: kesik çizgili özellik kartları).
+  Sıra: `npm run dev` açıkken `store:shots` (oyun ekranları) → `store:mascots` (şeffaf karakterler) →
+  `store:panorama` (store/play/*.png).

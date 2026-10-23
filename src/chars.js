@@ -57,7 +57,7 @@ export function buildCharacter(ci, slot) {
     headM.scale.set(1.25, 0.82, 1.05);
     eye(head, -0.17, 0.25, -0.12, 0.13); eye(head, 0.17, 0.25, -0.12, 0.13);
     const m = mesh(new THREE.TorusGeometry(0.2, 0.03, 6, 16, Math.PI), 0x3a1f1f, { cast: false });
-    m.rotation.z = Math.PI; m.position.set(0, 0.02, -0.33); mouth.add(m);
+    m.rotation.z = Math.PI; m.rotation.x = -0.35; m.scale.set(1, 0.55, 1); m.position.set(0, 0.03, -0.37); mouth.add(m);
     for (const s of [-1, 1]) { const c = mesh(sph(0.06, 8, 6), 0xff8fa3, { cast: false }); c.position.set(s * 0.27, -0.03, -0.25); head.add(c); }
   } else if (C.id === 'hippo') {
     headM.scale.set(1.05, 0.95, 1);

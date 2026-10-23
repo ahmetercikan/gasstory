@@ -1,0 +1,36 @@
+<!doctype html>
+<html lang="tr"><head><meta charset="utf-8"><title>Gas Story tanıtım görseli</title>
+<link rel="stylesheet" href="/node_modules/@fontsource/baloo-2/latin-700.css">
+<link rel="stylesheet" href="/node_modules/@fontsource/baloo-2/latin-ext-700.css">
+<link rel="stylesheet" href="/node_modules/@fontsource/baloo-2/latin-800.css">
+<link rel="stylesheet" href="/node_modules/@fontsource/baloo-2/latin-ext-800.css">
+<style>
+  :root { --ink: #17324f; --soft: #3f6488; --accent: #2b8fe0; --green: #7fcf2e; }
+  html, body { margin: 0; width: 1024px; height: 500px; overflow: hidden; font-family: 'Baloo 2', sans-serif; color: var(--ink); background: #dff1ff; }
+  .abs { position: absolute; }
+  #bg { left: -30px; top: -30px; width: 1084px; height: 560px; object-fit: cover; filter: blur(9px) saturate(1.15); }
+  #tint { inset: 0; background: linear-gradient(90deg, rgba(232,246,255,.86) 0 45%, rgba(220,240,255,.45)); }
+  .logo { left: 60px; top: 92px; display: flex; align-items: center; gap: 18px; }
+  .logo img { width: 96px; height: 96px; border-radius: 24px; box-shadow: 0 8px 18px rgba(20,60,110,.25); }
+  .logo b { font-size: 104px; font-weight: 800; line-height: 1; letter-spacing: -1px; }
+  .logo b i { font-style: normal; color: var(--green); -webkit-text-stroke: 3px var(--ink); paint-order: stroke fill; }
+  .tag { left: 64px; top: 228px; font-size: 40px; font-weight: 700; color: var(--accent); }
+  .sub { left: 64px; top: 286px; width: 470px; font-size: 27px; font-weight: 700; color: var(--soft); line-height: 1.25; }
+  .pill { left: 64px; top: 380px; display: flex; gap: 10px; }
+  .pill span { background: rgba(255,255,255,.85); border: 2px solid #fff; border-radius: 20px; padding: 4px 16px; font-size: 22px; font-weight: 800; box-shadow: 0 6px 14px rgba(20,60,110,.12); }
+  .m { filter: drop-shadow(0 16px 20px rgba(20,60,110,.25)); }
+  .ground { left: 470px; bottom: -150px; width: 760px; height: 260px; border-radius: 50%; background: linear-gradient(#bfe6ff, #a6dbff); }
+</style></head>
+<body>
+  <img id="bg" class="abs" src="/store/design/img/scene.png">
+  <div id="tint" class="abs"></div>
+  <div class="abs ground"></div>
+  <div class="abs logo"><img src="/assets/icon.png"><b><i>Gas</i> Story</b></div>
+  <div class="abs tag">Osur, geğir, dengede kal!</div>
+  <div class="abs sub">Arkadaşlarınla aynı salda dostluk bozan rafting macerası</div>
+  <div class="abs pill"><span>👥 1-4 kişi</span><span>📡 Online</span><span>🤖 Botlarla</span></div>
+  <img class="abs m" src="/store/design/img/mascot-hippo.png" style="left:545px;top:90px;width:430px">
+  <img class="abs m" src="/store/design/img/mascot-bear.png" style="left:705px;top:125px;width:380px">
+  <img class="abs m" src="/store/design/img/mascot-frog-fart.png" style="left:430px;top:60px;width:520px">
+  <script>document.fonts.ready.then(() => Promise.all([...document.images].map((i) => i.decode().catch(() => {})))).then(() => (window.done = true));</script>
+</body></html>

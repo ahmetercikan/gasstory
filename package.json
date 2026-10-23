@@ -12,7 +12,11 @@
     "assets": "node scripts/make-assets.mjs && capacitor-assets generate --android --iconBackgroundColor '#2b9bf0' --splashBackgroundColor '#a8dcff'",
     "sfx": "node scripts/make-sfx.mjs",
     "bots": "node scripts/botrun.mjs",
-    "apk": "npm run build && cap sync android && cd android && ./gradlew assembleDebug"
+    "apk": "npm run build && cap sync android && cd android && ./gradlew assembleDebug",
+    "store:shots": "node scripts/store-shots.mjs",
+    "store:mascots": "node scripts/store-mascots.mjs",
+    "store:panorama": "node scripts/store-panorama.mjs",
+    "aab": "npm run build && cap sync android && cd android && ./gradlew bundleRelease"
   },
   "dependencies": {
     "@capacitor/android": "^8.5.3",
@@ -27,6 +31,7 @@
   "devDependencies": {
     "@capacitor/assets": "^3.0.5",
     "@capacitor/cli": "^8.5.3",
+    "playwright-core": "^1.64.1",
     "typescript": "^5.9.3",
     "vite": "^5.4.21"
   }

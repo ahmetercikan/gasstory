@@ -1,0 +1,88 @@
+<!doctype html>
+<html lang="tr"><head><meta charset="utf-8"><title>Gas Story mağaza panoraması</title>
+<link rel="stylesheet" href="/node_modules/@fontsource/baloo-2/latin-500.css">
+<link rel="stylesheet" href="/node_modules/@fontsource/baloo-2/latin-ext-500.css">
+<link rel="stylesheet" href="/node_modules/@fontsource/baloo-2/latin-700.css">
+<link rel="stylesheet" href="/node_modules/@fontsource/baloo-2/latin-ext-700.css">
+<link rel="stylesheet" href="/node_modules/@fontsource/baloo-2/latin-800.css">
+<link rel="stylesheet" href="/node_modules/@fontsource/baloo-2/latin-ext-800.css">
+<style>
+  /* 3 telefon ekranı yan yana: 3 × 1080 = 3240 × 1920. Kesilince kesintisiz bir görsel oluşur. */
+  :root { --ink: #17324f; --soft: #3f6488; --accent: #2b8fe0; --green: #7fcf2e; }
+  html, body { margin: 0; width: 3240px; height: 1920px; overflow: hidden; font-family: 'Baloo 2', sans-serif; color: var(--ink); background: #dff1ff; }
+  .abs { position: absolute; }
+  #bg { left: -60px; top: -60px; width: 3360px; height: 2040px; object-fit: cover; filter: blur(16px) saturate(1.15); }
+  #tint { inset: 0; background: linear-gradient(180deg, rgba(228,244,255,.72), rgba(214,238,255,.55) 55%, rgba(200,232,255,.62)); }
+  .blob { border-radius: 50%; background: rgba(255,255,255,.55); }
+
+  /* 1. ekran */
+  .label { left: 110px; top: 150px; font-size: 46px; font-weight: 700; color: var(--accent); letter-spacing: .5px; }
+  .title { left: 104px; top: 205px; font-size: 128px; font-weight: 800; line-height: 1; letter-spacing: -1px; }
+  .title span { color: var(--green); -webkit-text-stroke: 3px var(--ink); paint-order: stroke fill; }
+  .sub { left: 110px; top: 370px; width: 860px; font-size: 54px; font-weight: 500; line-height: 1.3; color: var(--soft); }
+  .spark { font-size: 90px; color: var(--accent); opacity: .8; }
+  #mascot { left: -90px; bottom: 70px; width: 1480px; filter: drop-shadow(0 30px 40px rgba(20,60,110,.25)); }
+  .ground { left: -200px; bottom: -330px; width: 2600px; height: 620px; border-radius: 50%; background: linear-gradient(#bfe6ff, #a6dbff); opacity: .9; }
+
+  /* 2. ekran */
+  .logo { left: 1080px; width: 1080px; top: 150px; display: flex; align-items: center; justify-content: center; gap: 26px; }
+  .logo img { width: 150px; height: 150px; border-radius: 38px; box-shadow: 0 14px 30px rgba(20,60,110,.25); }
+  .logo b { font-size: 150px; font-weight: 800; line-height: 1; letter-spacing: -2px; }
+  .logo b i { font-style: normal; color: var(--green); -webkit-text-stroke: 4px var(--ink); paint-order: stroke fill; }
+  #phone { left: 1040px; top: 470px; width: 780px; transform: perspective(2600px) rotateY(-16deg) rotateZ(5deg); transform-origin: 50% 40%; }
+  .frame { border-radius: 118px; padding: 26px; background: linear-gradient(145deg, #2a2f38, #0e1116); box-shadow: 0 0 0 7px #d5dae1, 0 0 0 11px #9aa1ab, 40px 60px 90px rgba(10,40,80,.45); position: relative; }
+  .frame img { display: block; width: 100%; border-radius: 94px; }
+  .island { position: absolute; left: 50%; top: 52px; width: 190px; height: 54px; margin-left: -95px; background: #07080a; border-radius: 30px; }
+  .btn-side { position: absolute; right: -16px; top: 330px; width: 9px; height: 150px; background: #9aa1ab; border-radius: 4px; }
+
+  /* 3. ekran */
+  .card { left: 2290px; width: 850px; height: 260px; border-radius: 44px; background: rgba(255,255,255,.62); border: 3px solid rgba(255,255,255,.95); box-shadow: 0 24px 50px rgba(20,60,110,.16), inset 0 2px 0 #fff; backdrop-filter: blur(10px); display: flex; align-items: center; gap: 40px; padding: 0 44px; box-sizing: border-box; }
+  .ic { flex: 0 0 140px; height: 140px; border-radius: 50%; background: #fff; box-shadow: 0 0 0 6px #d6ecff, 0 8px 18px rgba(20,60,110,.15); display: flex; align-items: center; justify-content: center; }
+  .ic svg { width: 78px; height: 78px; stroke: var(--accent); stroke-width: 2.4; fill: none; stroke-linecap: round; stroke-linejoin: round; }
+  .card h3 { margin: 0; font-size: 60px; font-weight: 800; line-height: 1.05; }
+  .card p { margin: 6px 0 0; font-size: 38px; line-height: 1.25; color: var(--soft); font-weight: 500; }
+  .dash { height: 0; border-top: 7px dashed var(--accent); opacity: .85; }
+  .dot { width: 34px; height: 34px; border-radius: 50%; background: var(--accent); box-shadow: 0 0 0 10px rgba(43,143,224,.22); }
+</style></head>
+<body>
+  <img id="bg" class="abs" src="/store/design/img/scene.png">
+  <div id="tint" class="abs"></div>
+  <div class="abs blob" style="left:-260px;top:-300px;width:1100px;height:900px"></div>
+  <div class="abs blob" style="left:2700px;top:-200px;width:700px;height:600px;opacity:.6"></div>
+  <div class="abs ground"></div>
+  <svg class="abs" style="left:2160px;top:1300px" width="1080" height="620" viewBox="0 0 1080 620">
+    <path d="M1180 120 C 860 120, 760 520, 980 560 C 1180 600, 1120 300, 860 330 C 600 360, 560 700, 420 700" stroke="#2b8fe0" stroke-opacity=".28" stroke-width="20" fill="none"/>
+    <path d="M1180 230 C 960 220, 900 470, 1010 480" stroke="#2b8fe0" stroke-opacity=".2" stroke-width="20" fill="none"/>
+  </svg>
+
+  <!-- 1. ekran -->
+  <div class="abs label">Dostluk Bozan Co-op Rafting</div>
+  <div class="abs title">Gazla <span>Yol Al!</span></div>
+  <div class="abs sub">Arkadaşlarınla aynı salda; osurarak, geğirerek nehri fethedin.</div>
+  <div class="abs spark" style="left:930px;top:160px">✦</div>
+  <div class="abs spark" style="left:1000px;top:250px;font-size:54px">✦</div>
+  <img id="mascot" class="abs" src="/store/design/img/mascot-frog-fart.png">
+
+  <!-- 2. ekran -->
+  <div class="abs logo"><img src="/assets/icon.png"><b><i>Gas</i> Story</b></div>
+  <div id="phone" class="abs"><div class="frame"><img src="/store/raw/2-osurma.png"><div class="island"></div><div class="btn-side"></div></div></div>
+
+  <!-- 3. ekran: kartlar + telefona bağlanan kesik çizgiler -->
+  <div class="abs dash" style="left:1800px;top:787px;width:490px"></div><div class="abs dot" style="left:2273px;top:774px"></div>
+  <div class="abs dash" style="left:1785px;top:1107px;width:505px"></div><div class="abs dot" style="left:2273px;top:1094px"></div>
+  <div class="abs dash" style="left:1765px;top:1427px;width:525px"></div><div class="abs dot" style="left:2273px;top:1414px"></div>
+
+  <div class="abs card" style="top:660px">
+    <div class="ic"><svg viewBox="0 0 24 24"><path d="M7 15a4 4 0 1 1 1.2-7.8A5 5 0 0 1 17.6 9 3.5 3.5 0 1 1 17 16H8"/><path d="M3 19h7M5 22h5"/></svg></div>
+    <div><h3>Osur ya da Geğir</h3><p>Osuran baktığı yöne iter, geğiren salı geriye fırlatır.</p></div>
+  </div>
+  <div class="abs card" style="top:980px">
+    <div class="ic"><svg viewBox="0 0 24 24"><path d="M12 3v18M7 21h10M4 7h16"/><path d="M6 7l-3 7a3 3 0 0 0 6 0zM18 7l-3 7a3 3 0 0 0 6 0z"/></svg></div>
+    <div><h3>Dengede Kalın</h3><p>Herkes bir kenara toplanırsa sal yatar, devrilirsiniz!</p></div>
+  </div>
+  <div class="abs card" style="top:1300px">
+    <div class="ic"><svg viewBox="0 0 24 24"><circle cx="9" cy="8" r="3.2"/><path d="M3 20a6 6 0 0 1 12 0"/><circle cx="17" cy="9" r="2.6"/><path d="M15.5 14.2A5 5 0 0 1 21 19"/></svg></div>
+    <div><h3>4 Kişi Online</h3><p>Oda kur, kodu paylaş, arkadaşlarınla aynı salda buluş.</p></div>
+  </div>
+  <script>document.fonts.ready.then(() => Promise.all([...document.images].map((i) => i.decode().catch(() => {})))).then(() => (window.done = true));</script>
+</body></html>
