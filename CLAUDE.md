@@ -39,6 +39,11 @@
   `android/app/build/outputs/bundle/release/app-release.aab`. İmza: `android/gasstory-release.keystore` +
   `android/keystore.properties` (23 Ekim 2026'da oluşturuldu, git'e girmez, **yedeklenmeli**). Her yüklemede
   `android/app/build.gradle` → `versionCode` +1. Mağaza metinleri ve form cevapları: `store/play-metin.md`.
+- **iOS / TestFlight:** `ios/` (Capacitor, Swift Package Manager; CocoaPods yok), paket kimliği Android ile aynı, yalnız
+  iPhone. `npm run ios` Xcode'da açar; `npm run ipa` arşivleyip TestFlight'a yükler (`scripts/ios-testflight.sh`).
+  Anahtarlar proje dışında `~/.gasstory-ios.env` (TEAM_ID + App Store Connect API anahtarı .p8), git'e girmez. Yapı
+  numarası tarih-saatten otomatik; sürüm adı `project.pbxproj` → `MARKETING_VERSION`. AdMob iOS şimdilik Google deneme
+  kimliği: gerçeği açılınca `Info.plist` → `GADApplicationIdentifier` ve `src/ads.js` iOS birimi değişmeli.
 - **Mağaza görselleri:** kullanıcının verdiği örnek tasarım (Calemio) düzeninde kesintisiz 3'lü panorama:
   `store/design/panorama.html` (1: maskot + başlık, 2: logo + eğik telefon, 3: kesik çizgili özellik kartları).
   Sıra: `npm run dev` açıkken `store:shots` (oyun ekranları) → `store:mascots` (şeffaf karakterler) →

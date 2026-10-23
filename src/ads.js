@@ -1,10 +1,13 @@
 import { AdMob, InterstitialAdPluginEvents } from '@capacitor-community/admob';
+import { Capacitor } from '@capacitor/core';
 import { native } from './native.js';
 
 // Bölüm sonu geçiş reklamı (AdMob). Yalnızca telefon uygulamasında çalışır; web sürümünde reklam yok.
+// iOS: iOS AdMob uygulaması açılana kadar Google'ın deneme reklamı (ios/App/App/Info.plist ile birlikte değiştir).
+const IOS = Capacitor.getPlatform() === 'ios';
 const AD_UNIT = import.meta.env.DEV
-  ? 'ca-app-pub-3940256099942544/1033173712' // Google'ın deneme reklamı (geliştirmede gerçek reklam tıklanmasın)
-  : 'ca-app-pub-8025731390860952/8149010720';
+  ? (IOS ? 'ca-app-pub-3940256099942544/4411468910' : 'ca-app-pub-3940256099942544/1033173712') // Google'ın deneme reklamı (geliştirmede gerçek reklam tıklanmasın)
+  : (IOS ? 'ca-app-pub-3940256099942544/4411468910' : 'ca-app-pub-8025731390860952/8149010720');
 const MIN_GAP = 45000; // iki reklam arası en az süre
 
 let ready = false, loading = false, lastShown = 0, started = false;
