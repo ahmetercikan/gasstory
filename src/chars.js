@@ -1,14 +1,14 @@
 import { THREE, mesh, toon, lerp } from './core.js';
 
 export const CHARS = [
-  { id: 'frog', name: 'Kurbağa', emoji: '🐸', color: 0x86d94a, belly: 0xe4f8a8, feet: 0x6cc23a, pitch: 1.25 },
-  { id: 'hippo', name: 'Su Aygırı', emoji: '🦛', color: 0x7a7393, belly: 0xc9b6d4, feet: 0x5f5878, pitch: 0.75 },
-  { id: 'penguin', name: 'Penguen', emoji: '🐧', color: 0x2b3a67, belly: 0xf6f6f6, feet: 0xff9a2e, pitch: 1.1 },
-  { id: 'bear', name: 'Ayı', emoji: '🐻', color: 0x9a6240, belly: 0xe6b582, feet: 0x7a4a2e, pitch: 0.9 },
+  { id: 'frog', name: 'Kurbağa', img: './img/char-frog.png', color: 0x86d94a, belly: 0xe4f8a8, feet: 0x6cc23a, pitch: 1.25 },
+  { id: 'hippo', name: 'Su Aygırı', img: './img/char-hippo.png', color: 0x7a7393, belly: 0xc9b6d4, feet: 0x5f5878, pitch: 0.75 },
+  { id: 'penguin', name: 'Penguen', img: './img/char-penguin.png', color: 0x2b3a67, belly: 0xf6f6f6, feet: 0xff9a2e, pitch: 1.1 },
+  { id: 'bear', name: 'Ayı', img: './img/char-bear.png', color: 0x9a6240, belly: 0xe6b582, feet: 0x7a4a2e, pitch: 0.9 },
 ];
 export const POWERS = {
-  fart: { name: 'Osurma', emoji: '💨', desc: 'Basılı tut: sürekli itiş. Sal, baktığın yöne gider.' },
-  burp: { name: 'Geğirme', emoji: '🫧', desc: 'Basılı tut, şişir, bırak: dev patlama! Sal arkana fırlar.' },
+  fart: { name: 'Osurma', icon: 'fart', desc: 'Basılı tut: sürekli itiş. Sal, baktığın yöne gider.' },
+  burp: { name: 'Geğirme', icon: 'burp', desc: 'Basılı tut, şişir, bırak: dev patlama! Sal arkana fırlar.' },
 };
 export const SLOT_COLORS = ['#ff5a5f', '#3fa7ff', '#ffc93c', '#b26bff'];
 export const SLOT_HEX = [0xff5a5f, 0x3fa7ff, 0xffc93c, 0xb26bff];

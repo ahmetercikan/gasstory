@@ -129,10 +129,10 @@ input { font: inherit; user-select: text; -webkit-user-select: text; }
 #gasBtn.burp.down { box-shadow: 0 2px 0 #b07f00; }
 #gasBtn.charged { animation: shake 0.08s infinite; }
 @keyframes shake { 50% { transform: translateY(6px) scale(1.02) rotate(3deg); } }
-#gasBtn svg { position: absolute; inset: -8px; width: calc(100% + 16px); height: calc(100% + 16px); transform: rotate(-90deg); }
+#gasBtn > svg { position: absolute; inset: -8px; width: calc(100% + 16px); height: calc(100% + 16px); transform: rotate(-90deg); }
 #gasBtn .track { fill: none; stroke: rgba(255, 255, 255, 0.35); stroke-width: 6; }
 #gasBtn .fill { fill: none; stroke: #fff; stroke-width: 6; stroke-linecap: round; stroke-dasharray: 283; stroke-dashoffset: 0; }
-#gasEmoji { font-size: 46px; line-height: 1; }
+#gasEmoji { font-size: 46px; line-height: 1; display: flex; }
 #gasBtn b { font-size: 18px; font-weight: 800; color: #1d3a0a; }
 #gasBtn.empty { filter: grayscale(0.8); }
 
@@ -170,3 +170,39 @@ input { font: inherit; user-select: text; -webkit-user-select: text; }
 @media (min-width: 900px) {
   #joyZone .joyHelp::after { content: ' · Klavye: WASD + Boşluk'; }
 }
+
+/* --- Oyunun kendi simgeleri (src/icons.js) ve karakter portreleri */
+.ic { width: 1.25em; height: 1.25em; vertical-align: -0.28em; flex: none; overflow: visible; }
+.btn > span { display: inline-flex; align-items: center; gap: 8px; }
+.btn.icon .ic { width: 28px; height: 28px; }
+.row.small .btn .ic { width: 26px; height: 26px; }
+.char-pick button { font-size: 0; padding: 6px 0 4px; }
+.char-pick .cp { width: 64px; height: 64px; object-fit: contain; display: block; margin: 0 auto; filter: drop-shadow(0 3px 0 rgba(20,40,80,.15)); }
+.char-pick button span { font-size: 12px; }
+.pow-pick button { display: flex; align-items: center; justify-content: center; gap: 8px; }
+.pow-pick .ic { width: 30px; height: 30px; }
+.slot img.em { width: 48px; height: 48px; object-fit: contain; }
+.slot .pw .ic { width: 30px; height: 30px; }
+.slot .x { display: flex; align-items: center; padding: 6px 8px; }
+.slot .x .ic { width: 18px; height: 18px; }
+.slot .add { display: inline-flex; align-items: center; gap: 6px; }
+.lvl .e .ic { width: 38px; height: 38px; }
+.lvl small .ic { width: 14px; height: 14px; vertical-align: -2px; }
+#roomCode .ic { width: 46px; height: 46px; vertical-align: middle; }
+.res-medal .ic { width: 110px; height: 110px; }
+.stats .ic { width: 22px; height: 22px; vertical-align: -3px; }
+.award .ic { width: 24px; height: 24px; vertical-align: -6px; margin-right: 4px; }
+.how p .ic { width: 24px; height: 24px; vertical-align: -6px; margin-right: 2px; }
+#hHearts { letter-spacing: 0; display: flex; gap: 1px; align-items: center; }
+#hHearts .ic, #hStars .ic { width: 20px; height: 20px; }
+#hStars { display: flex; gap: 4px; align-items: center; }
+.pill.icon .ic { width: 18px; height: 18px; vertical-align: -3px; }
+#progRaft .ic { width: 24px; height: 24px; }
+#progFlag .ic { width: 24px; height: 24px; }
+.tm img.cp { width: 24px; height: 24px; object-fit: contain; }
+.tm .ic { width: 16px; height: 16px; }
+#gasEmoji .ic { width: 58px; height: 58px; }
+#banner .ic { width: 0.9em; height: 0.9em; vertical-align: -0.1em; }
+.ftxt .ic { width: 1.1em; height: 1.1em; vertical-align: -0.2em; }
+#loading .spin img { width: 120px; height: 120px; object-fit: contain; }
+#resBtns { display: flex; flex-direction: column; gap: 10px; }

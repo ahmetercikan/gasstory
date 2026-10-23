@@ -122,7 +122,7 @@ const floaters = [];
 export function floatText(pos, text, { color = '#fff', size = 1, life = 1.2, cls = '' } = {}) {
   const el = document.createElement('div');
   el.className = 'ftxt ' + cls;
-  el.textContent = text;
+  el.innerHTML = text; // metinler oyunun kendi yazıları, simge SVG'si içerebilir
   el.style.color = color;
   el.style.setProperty('--s', size);
   layer.appendChild(el);

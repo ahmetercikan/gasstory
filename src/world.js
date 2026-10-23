@@ -197,7 +197,7 @@ export class World {
       for (let i = 0; i < n; i++) for (let j = 0; j < 2; j++) { c.fillStyle = (i + j) % 2 ? '#222' : '#fff'; c.fillRect((i * w) / n, (j * h) / 4, w / n, h / 4); }
       c.fillStyle = '#ffd23f'; c.fillRect(0, h / 2, w, h / 2);
       c.fillStyle = '#d6336c'; c.font = `bold ${h * 0.38}px "Baloo 2", sans-serif`; c.textAlign = 'center'; c.textBaseline = 'middle';
-      c.fillText('BİTİŞ  💨  BİTİŞ', w / 2, h * 0.76);
+      c.fillText('BİTİŞ  •  BİTİŞ', w / 2, h * 0.76);
     }, 1024, 256);
     const banner = new THREE.Mesh(new THREE.PlaneGeometry(W * 2, W * 0.5), new THREE.MeshToonMaterial({ map: tex, side: THREE.DoubleSide }));
     banner.position.y = 7.6;

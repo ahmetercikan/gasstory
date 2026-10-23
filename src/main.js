@@ -14,6 +14,9 @@ import * as FX from './fx.js';
 import { readInput, resetInput } from './input.js';
 import { net, hostRoom, joinRoom, broadcast, sendToHost, kick, closeNet } from './net.js';
 import { initNative } from './native.js';
+import { ic, hydrateIcons } from './icons.js';
+
+const portrait = (ci, cls = 'cp') => `<img class="${cls}" src="${CHARS[ci].img}" alt="">`;
 
 const profile = Object.assign({ name: '', char: Math.floor(Math.random() * 4), power: 'fart' }, store.get('profile', {}));
 const saveProfile = () => store.set('profile', profile);
@@ -57,14 +60,14 @@ function buildMenu() {
   nameIn.value = profile.name;
   nameIn.addEventListener('input', () => { profile.name = nameIn.value.trim().slice(0, 12); saveProfile(); });
   const cp = $('#charPick');
-  cp.innerHTML = CHARS.map((c, i) => `<button data-i="${i}">${c.emoji}<span>${c.name}</span></button>`).join('');
+  cp.innerHTML = CHARS.map((c, i) => `<button data-i="${i}">${portrait(i)}<span>${c.name}</span></button>`).join('');
   cp.addEventListener('click', (e) => {
     const b = e.target.closest('button'); if (!b) return;
     profile.char = +b.dataset.i; saveProfile(); renderMenu();
     A.sfxs.fartShort(CHARS[profile.char].pitch);
   });
   const pp = $('#powPick');
-  pp.innerHTML = Object.entries(POWERS).map(([k, p]) => `<button data-k="${k}" class="${k}">${p.emoji} ${p.name}</button>`).join('');
+  pp.innerHTML = Object.entries(POWERS).map(([k, p]) => `<button data-k="${k}" class="${k}">${ic(p.icon)} ${p.name}</button>`).join('');
   pp.addEventListener('click', (e) => {
     const b = e.target.closest('button'); if (!b) return;
     profile.power = b.dataset.k; saveProfile(); renderMenu();
@@ -92,8 +95,8 @@ function renderMenu() {
   $('#powDesc').textContent = POWERS[profile.power].desc;
 }
 function renderSound() {
-  for (const id of ['#sndBtn', '#sndBtn2']) $(id).textContent = A.isMuted() ? '🔇' : '🔊';
-  for (const id of ['#musBtn', '#musBtn2']) { $(id).textContent = '🎵'; $(id).style.opacity = A.isMusicOn() ? 1 : 0.4; }
+  for (const id of ['#sndBtn', '#sndBtn2']) $(id).innerHTML = ic(A.isMuted() ? 'mute' : 'sound');
+  for (const id of ['#musBtn', '#musBtn2']) $(id).style.opacity = A.isMusicOn() ? 1 : 0.4;
 }
 const myInfo = () => ({ name: profile.name || 'Oyuncu', char: profile.char, power: profile.power });
 
@@ -160,7 +163,7 @@ function setupHostHandlers() {
     addToRoster(id, hello);
     pushLobby();
     A.sfxs.fartShort(1.3);
-    toast(`${hello.name || 'Biri'} katıldı! 🎉`);
+    toast(`${hello.name || 'Biri'} katıldı!`);
   };
   net.onLeave = (id) => {
     const r = G.roster.find((x) => x.owner === id);
@@ -169,7 +172,7 @@ function setupHostHandlers() {
       // Oyun sırasında ayrılanın yerine bot geçer
       r.bot = true; r.owner = 'bot';
       const p = G.sim?.players.find((q) => q.slot === r.slot); if (p) p.bot = true;
-      toast(`${r.name} ayrıldı, yerine bot geçti 🤖`);
+      toast(`${r.name} ayrıldı, yerine bot geçti`);
     } else {
       G.roster = G.roster.filter((x) => x !== r);
       toast(`${r.name} ayrıldı`);
@@ -224,29 +227,29 @@ function renderLobby() {
   const role = net.role;
   const isBoss = role !== 'client';
   $('#roomLbl').textContent = role === 'local' ? 'TEK BAŞINA' : 'ODA KODU';
-  $('#roomCode').textContent = role === 'local' ? '🛟' : net.code;
+  $('#roomCode').innerHTML = role === 'local' ? ic('buoy') : net.code;
   $('#shareBtn').classList.toggle('hidden', role !== 'host');
   $('#roomHelp').textContent = role === 'host'
     ? 'Arkadaşların "Odaya Katıl" deyip bu kodu yazsın. Boş yerlere bot ekleyebilirsin.'
-    : role === 'client' ? 'Bağlandın! 🎉 Sal hazırlanıyor…' : 'Botlar sana takım arkadaşlığı yapar. İstediğin kadar ekle ya da çıkar.';
+    : role === 'client' ? 'Bağlandın! Sal hazırlanıyor…' : 'Botlar sana takım arkadaşlığı yapar. İstediğin kadar ekle ya da çıkar.';
   let html = '';
   for (let s = 0; s < 4; s++) {
     const r = G.roster.find((x) => x.slot === s);
     if (!r) {
-      html += `<div class="slot empty" style="--c:${SLOT_COLORS[s]}"><span>Boş koltuk</span>${isBoss ? `<button class="add" data-add="1">+ 🤖 Bot ekle</button>` : ''}</div>`;
+      html += `<div class="slot empty" style="--c:${SLOT_COLORS[s]}"><span>Boş koltuk</span>${isBoss ? `<button class="add" data-add="1">${ic('bot')} Bot ekle</button>` : ''}</div>`;
       continue;
     }
     const me = r.owner === (role === 'client' ? net.myId : 'host') && !r.bot;
-    const tag = r.bot ? 'Bot 🤖' : me ? 'Sen' : 'Online 📡';
+    const tag = r.bot ? 'Bot' : me ? 'Sen' : 'Online';
     const canKick = isBoss && !me;
-    html += `<div class="slot" style="--c:${SLOT_COLORS[s]}"><span class="em">${CHARS[r.char].emoji}</span>
-      <span class="nm">${esc(r.name)}<small>${tag} · ${POWERS[r.power].name}</small></span><span class="pw">${POWERS[r.power].emoji}</span>
-      ${canKick ? `<button class="x" data-kick="${s}">✕</button>` : ''}</div>`;
+    html += `<div class="slot" style="--c:${SLOT_COLORS[s]}">${portrait(r.char, 'em')}
+      <span class="nm">${esc(r.name)}<small>${tag} · ${POWERS[r.power].name}</small></span><span class="pw">${ic(POWERS[r.power].icon)}</span>
+      ${canKick ? `<button class="x" data-kick="${s}">${ic('close')}</button>` : ''}</div>`;
   }
   $('#roster').innerHTML = html;
   $('#levels').innerHTML = LEVELS.map((L, i) => {
     const best = store.get('best-' + i, null);
-    return `<button class="lvl ${i === G.level ? 'on' : ''}" data-l="${i}" ${isBoss ? '' : 'disabled'}><span class="e">${L.emoji}</span>${L.name}<small>${best ? '🏆 ' + fmtTime(best.time) + ' · ⭐' + best.stars : 'Rekor yok'}</small></button>`;
+    return `<button class="lvl ${i === G.level ? 'on' : ''}" data-l="${i}" ${isBoss ? '' : 'disabled'}><span class="e">${ic(L.icon)}</span>${L.name}<small>${best ? ic('trophy') + ' ' + fmtTime(best.time) + ' · ' + ic('star') + best.stars : 'Rekor yok'}</small></button>`;
   }).join('');
   $('#startBtn').classList.toggle('hidden', !isBoss);
   $('#waitHost').classList.toggle('hidden', isBoss);
@@ -269,7 +272,7 @@ $('#levels').addEventListener('click', (e) => {
 $('#startBtn').onclick = () => hostStart(G.level);
 $('#lobbyBack').onclick = () => leaveToMenu();
 $('#shareBtn').onclick = async () => {
-  const text = `Gas Story'de salıma gel! 💨 Oda kodu: ${net.code}`;
+  const text = `Gas Story'de salıma gel! Oda kodu: ${net.code}`;
   try { if (navigator.share) await navigator.share({ text }); else { await navigator.clipboard.writeText(net.code); toast('Kod kopyalandı: ' + net.code); } } catch { /* vazgeçti */ }
 };
 
@@ -343,7 +346,7 @@ function startGame(level, roster) {
   const me = G.sim.players.find((p) => p.slot === G.mySlot);
   const burp = me?.power === 'burp';
   $('#gasBtn').classList.toggle('burp', burp);
-  $('#gasEmoji').textContent = burp ? '🫧' : '💨';
+  $('#gasEmoji').innerHTML = ic(burp ? 'burp' : 'fart');
   $('#gasLabel').textContent = burp ? 'GEĞİR' : 'OSUR';
   $('#progCps').innerHTML = G.sim.cps.map((c) => `<i style="left:${(c.s / G.sim.T.finishS) * 100}%"></i>`).join('');
   $('#hud').classList.remove('hidden');
@@ -352,7 +355,7 @@ function startGame(level, roster) {
   G.screen = 'game';
   document.body.classList.add('playing');
   A.setAmbient(true);
-  showHint(`${LEVELS[level].emoji} ${LEVELS[level].name}`);
+  showHint(LEVELS[level].name);
 }
 
 // ---------------- Olaylar (ses + efekt)
@@ -372,42 +375,42 @@ function handleEvent(e) {
   if (G.attract) { if (e.type === 'burp') burpFx(e); return; }
   switch (e.type) {
     case 'count': banner(String(e.n)); A.sfxs.beep(); break;
-    case 'go': banner('PIRRRT! 💨', 900); A.sfxs.go(); break;
+    case 'go': banner('PIRRRT!', 900); A.sfxs.go(); break;
     case 'fall': {
       const { c } = charOf(e.slot);
       const pos = c ? c.root.getWorldPosition(new THREE.Vector3()) : rp;
       FX.splash(pos.x, r.y, pos.z, 20, 1);
       A.sfxs.splash(); A.sfxs.whoa(CHARS[charOf(e.slot).p.char].pitch);
-      FX.floatText(pos.clone().setY(pos.y + 1.5), isMine(e.slot) ? 'Suya düştün! 🏊 Sala yüz!' : 'ŞAPŞAL! 🏊', { color: '#8fd3ff' });
+      FX.floatText(pos.clone().setY(pos.y + 1.5), isMine(e.slot) ? 'Suya düştün! Sala yüz!' : 'ŞAPŞAL!', { color: '#8fd3ff' });
       if (isMine(e.slot)) vibrate(60);
       break;
     }
-    case 'climb': A.sfxs.climb(); FX.floatText(headPos(e.slot).clone(), 'Hop! 🙌', { color: '#b6f05a', size: 0.8 }); break;
-    case 'rescue': A.sfxs.climb(); FX.floatText(headPos(e.slot).clone(), '🛟 Kurtarıldı', { color: '#fff', size: 0.8 }); break;
+    case 'climb': A.sfxs.climb(); FX.floatText(headPos(e.slot).clone(), 'Hop!', { color: '#b6f05a', size: 0.8 }); break;
+    case 'rescue': A.sfxs.climb(); FX.floatText(headPos(e.slot).clone(), ic('buoy') + ' Kurtarıldı', { color: '#fff', size: 0.8 }); break;
     case 'burp': burpFx(e); break;
-    case 'blown': FX.floatText(headPos(e.slot).clone(), 'UÇTUUU! 😵', { color: '#ffd84d', size: 0.9 }); if (isMine(e.slot)) vibrate(40); break;
-    case 'stink': FX.floatText(headPos(e.slot).clone(), '🤢', { size: 1.4 }); A.sfxs.ugh(); break;
+    case 'blown': FX.floatText(headPos(e.slot).clone(), 'UÇTUUU!', { color: '#ffd84d', size: 0.9 }); if (isMine(e.slot)) vibrate(40); break;
+    case 'stink': FX.floatText(headPos(e.slot).clone(), ic('sick'), { size: 1.4 }); A.sfxs.ugh(); break;
     case 'bump': A.sfxs.bump(); G.shake = Math.max(G.shake, 0.2); vibrate(15); break;
     case 'hit':
       A.sfxs.hit(); FX.sparks(rp.x, rp.y, rp.z, 0xff5a5f, 20);
-      banner('DELİNDİ! 💥'); G.shake = 0.7; vibrate(90); flashHearts();
+      banner(ic('boom') + ' DELİNDİ!'); G.shake = 0.7; vibrate(90); flashHearts();
       break;
     case 'pop':
       A.sfxs.pop(); FX.splash(rp.x, r.y, rp.z, 40, 1.5);
-      banner('PATLADI! 💥<small>kontrol noktasına dönülüyor</small>', 2400); G.shake = 1.1; vibrate(250); flashHearts();
+      banner(ic('boom') + ' PATLADI!<small>kontrol noktasına dönülüyor</small>', 2400); G.shake = 1.1; vibrate(250); flashHearts();
       break;
     case 'capsize':
       A.sfxs.capsize(); FX.splash(rp.x, r.y, rp.z, 40, 1.4);
-      banner('DEVRİLDİNİZ! 🙃<small>dengeyi koruyun</small>', 1800); G.shake = 0.8; vibrate(160); flashHearts();
+      banner('DEVRİLDİNİZ!<small>dengeyi koruyun</small>', 1800); G.shake = 0.8; vibrate(160); flashHearts();
       break;
     case 'respawn': FX.clearFloaters(); break;
-    case 'star': { const p = objPos(e.id); FX.sparks(p.x, p.y, p.z, 0xffd23f, 18); A.sfxs.star(); FX.floatText(p, '+⭐', { color: '#ffd23f' }); vibrate(10); break; }
-    case 'bean': { const p = objPos(e.id); FX.sparks(p.x, p.y, p.z, 0xa6e22e, 18); A.sfxs.bean(); FX.floatText(p, 'FASULYE! 💨 süper osuruk', { color: '#b6f05a', size: 0.8, life: 1.8 }); break; }
-    case 'soda': { const p = objPos(e.id); FX.sparks(p.x, p.y, p.z, 0x6fd0ff, 18); A.sfxs.soda(); FX.floatText(p, 'GAZOZ! 🫧 süper geğirme', { color: '#ffd84d', size: 0.8, life: 1.8 }); break; }
-    case 'cp': A.sfxs.cp(); banner('KONTROL NOKTASI ✔', 1300); break;
+    case 'star': { const p = objPos(e.id); FX.sparks(p.x, p.y, p.z, 0xffd23f, 18); A.sfxs.star(); FX.floatText(p, '+' + ic('star'), { color: '#ffd23f' }); vibrate(10); break; }
+    case 'bean': { const p = objPos(e.id); FX.sparks(p.x, p.y, p.z, 0xa6e22e, 18); A.sfxs.bean(); FX.floatText(p, ic('bean') + ' FASULYE! süper osuruk', { color: '#b6f05a', size: 0.8, life: 1.8 }); break; }
+    case 'soda': { const p = objPos(e.id); FX.sparks(p.x, p.y, p.z, 0x6fd0ff, 18); A.sfxs.soda(); FX.floatText(p, ic('soda') + ' GAZOZ! süper geğirme', { color: '#ffd84d', size: 0.8, life: 1.8 }); break; }
+    case 'cp': A.sfxs.cp(); banner(ic('check') + ' KONTROL NOKTASI', 1300); break;
     case 'hint': showHint(e.text); break;
     case 'land': A.sfxs.waterfall(); FX.splash(rp.x, r.y, rp.z, 36, 1.3); G.shake = 0.9; vibrate(70); break;
-    case 'finish': A.sfxs.win(); banner('BİTİŞ! 🏁', 2200); vibrate(120); break;
+    case 'finish': A.sfxs.win(); banner(ic('flag') + ' BİTİŞ!', 2200); vibrate(120); break;
   }
 }
 function burpFx(e) {
@@ -429,13 +432,13 @@ function computeResults() {
   const s = G.sim, L = LEVELS[G.level];
   const best = store.get('best-' + G.level, null);
   const time = s.finishTime;
-  const medal = s.deaths === 0 && s.stars === s.totalStars && time <= L.par ? '🥇' : s.deaths === 0 && s.stars >= s.totalStars * 0.5 ? '🥈' : '🥉';
+  const medal = s.deaths === 0 && s.stars === s.totalStars && time <= L.par ? 'gold' : s.deaths === 0 && s.stars >= s.totalStars * 0.5 ? 'silver' : 'bronze';
   const ps = s.players;
   const top = (f) => ps.reduce((a, b) => (f(b) > f(a) ? b : a), ps[0]);
   const awards = [];
-  const gasKing = top((p) => p.stat.gas); if (gasKing.stat.gas > 1) awards.push(`👑 Gaz Kralı: <b>${esc(gasKing.name)}</b> (${gasKing.stat.gas.toFixed(0)} pırt puanı)`);
-  const swimmer = top((p) => p.stat.falls); if (swimmer.stat.falls > 0) awards.push(`🏊 Su Perisi: <b>${esc(swimmer.name)}</b> (${swimmer.stat.falls} kez suya düştü)`);
-  const villain = top((p) => p.stat.annoy); if (villain.stat.annoy > 0) awards.push(`😈 Dostluk Bozan: <b>${esc(villain.name)}</b> (${villain.stat.annoy} arkadaşını uçurdu/kokuttu)`);
+  const gasKing = top((p) => p.stat.gas); if (gasKing.stat.gas > 1) awards.push(`${ic('crown')} Gaz Kralı: <b>${esc(gasKing.name)}</b> (${gasKing.stat.gas.toFixed(0)} pırt puanı)`);
+  const swimmer = top((p) => p.stat.falls); if (swimmer.stat.falls > 0) awards.push(`${ic('water')} Su Perisi: <b>${esc(swimmer.name)}</b> (${swimmer.stat.falls} kez suya düştü)`);
+  const villain = top((p) => p.stat.annoy); if (villain.stat.annoy > 0) awards.push(`${ic('devil')} Dostluk Bozan: <b>${esc(villain.name)}</b> (${villain.stat.annoy} arkadaşını uçurdu/kokuttu)`);
   return { level: G.level, time, stars: s.stars, total: s.totalStars, deaths: s.deaths, capsizes: s.capsizes, falls: s.falls, medal, awards, prevBest: best };
 }
 function showResults() {
@@ -445,17 +448,17 @@ function showResults() {
   if (!R.prevBest || R.time < R.prevBest.time) { isNew = true; store.set('best-' + R.level, { time: R.time, stars: Math.max(R.stars, R.prevBest?.stars || 0) }); }
   else if (R.stars > R.prevBest.stars) store.set('best-' + R.level, { ...R.prevBest, stars: R.stars });
   $('#resTitle').textContent = `${LEVELS[R.level].name} bitti!`;
-  $('#resMedal').textContent = R.medal;
+  $('#resMedal').innerHTML = ic(R.medal);
   $('#resStats').innerHTML = `
-    <div class="${isNew ? 'new' : ''}">${fmtTime(R.time)}<small>${isNew ? '🏆 YENİ REKOR' : 'süre (par ' + LEVELS[R.level].par + ' sn)'}</small></div>
-    <div>⭐ ${R.stars}/${R.total}<small>yıldız</small></div>
-    <div>💥 ${R.deaths}<small>patlama</small></div>
-    <div>🏊 ${R.falls}<small>suya düşme · ${R.capsizes} devrilme</small></div>`;
+    <div class="${isNew ? 'new' : ''}">${fmtTime(R.time)}<small>${isNew ? ic('trophy') + ' YENİ REKOR' : 'süre (par ' + LEVELS[R.level].par + ' sn)'}</small></div>
+    <div>${ic('star')} ${R.stars}/${R.total}<small>yıldız</small></div>
+    <div>${ic('boom')} ${R.deaths}<small>patlama</small></div>
+    <div>${ic('water')} ${R.falls}<small>suya düşme · ${R.capsizes} devrilme</small></div>`;
   $('#resAwards').innerHTML = R.awards.map((a) => `<div class="award">${a}</div>`).join('');
   const boss = net.role !== 'client';
   $('#resBtns').classList.toggle('hidden', !boss);
   $('#resWait').classList.toggle('hidden', boss);
-  $('#nextBtn').innerHTML = R.level < LEVELS.length - 1 ? `Sonraki Bölüm ➜ <small>${LEVELS[R.level + 1].emoji} ${LEVELS[R.level + 1].name}</small>` : `🔁 Baştan Başla <small>${LEVELS[0].name}</small>`;
+  $('#nextBtn').innerHTML = R.level < LEVELS.length - 1 ? `<span>Sonraki Bölüm ${ic('next')}</span><small>${LEVELS[R.level + 1].name}</small>` : `<span>${ic('again')} Baştan Başla</span><small>${LEVELS[0].name}</small>`;
   G.screen = 'results';
   show('results');
   $('#hud').classList.add('hidden');
@@ -478,7 +481,7 @@ $('#pauseBtn').onclick = () => {
   if (net.role === 'local') G.paused = true;
   resetInput();
   $('#restartBtn').classList.toggle('hidden', net.role === 'client');
-  $('#quitBtn').textContent = net.role === 'client' ? '🚪 Odadan Ayrıl' : '🏠 Lobiye Dön';
+  $('#quitBtn').innerHTML = net.role === 'client' ? `<span>${ic('door')} Odadan Ayrıl</span>` : `<span>${ic('home')} Lobiye Dön</span>`;
   show('pause');
 };
 $('#resumeBtn').onclick = () => { G.paused = false; show(null); };
@@ -632,16 +635,16 @@ const hudCache = {};
 function setHud(id, html) { if (hudCache[id] !== html) { hudCache[id] = html; $(id).innerHTML = html; } }
 function updateHud() {
   const sim = G.sim, r = sim.raft;
-  setHud('#hHearts', '🛟'.repeat(Math.max(0, r.hp)) + '<span style="opacity:.25">' + '🛟'.repeat(Math.max(0, 3 - r.hp)) + '</span>');
+  setHud('#hHearts', ic('buoy').repeat(Math.max(0, r.hp)) + '<span style="opacity:.25">' + ic('buoy').repeat(Math.max(0, 3 - r.hp)) + '</span>');
   const tm = sim.mode === 'countdown' ? 0 : sim.mode === 'finished' ? sim.finishTime : sim.time - 3.5;
   setHud('#hTime', fmtTime(tm));
-  setHud('#hStars', `⭐ ${sim.stars}/${sim.totalStars}`);
+  setHud('#hStars', `${ic('star')} ${sim.stars}/${sim.totalStars}`);
   const prog = clamp(r.s / sim.T.finishS, 0, 1);
   $('#progFill').style.width = prog * 100 + '%';
   $('#progRaft').style.left = prog * 100 + '%';
   document.querySelectorAll('#progCps i').forEach((el, i) => el.classList.toggle('got', i <= sim.cp));
   // Takım listesi
-  setHud('#team', sim.players.map((p) => `<div class="tm ${p.power} ${p.onRaft ? '' : 'water'}" style="--c:${SLOT_COLORS[p.slot]}">${CHARS[p.char].emoji}<span class="m"><i style="width:${Math.round(p.meter * 100)}%"></i></span>${p.onRaft ? (p.dizzy > 0 ? '🤢' : p.boost > 0 ? '⚡' : '') : '🏊'}</div>`).join(''));
+  setHud('#team', sim.players.map((p) => `<div class="tm ${p.power} ${p.onRaft ? '' : 'water'}" style="--c:${SLOT_COLORS[p.slot]}">${portrait(p.char)}<span class="m"><i style="width:${Math.round(p.meter * 100)}%"></i></span>${p.onRaft ? (p.dizzy > 0 ? ic('sick') : p.boost > 0 ? ic('bolt') : '') : ic('water')}</div>`).join(''));
   // Denge göstergesi (kamera yönüne göre)
   const [wx, wz] = [r.tx * Math.cos(r.a) - r.tz * Math.sin(r.a), r.tx * Math.sin(r.a) + r.tz * Math.cos(r.a)];
   const fx = Math.sin(G.camH), fz = -Math.cos(G.camH), rx = Math.cos(G.camH), rz = Math.sin(G.camH);
@@ -659,6 +662,7 @@ function updateHud() {
 }
 
 // ---------------- Başlat
+hydrateIcons();
 buildMenu();
 startAttract();
 initNative(onBack);

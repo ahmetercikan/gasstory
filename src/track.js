@@ -5,7 +5,7 @@ import { clamp, lerp } from './util.js';
 // Yay (arc) açıları: 0 = sağ, 90 = akış yönü (ileri).
 export const LEVELS = [
   {
-    name: 'Çırak Deresi', emoji: '🌿', par: 85, theme: { wallA: 0xe9776a, wallB: 0xf3a35b, grass: 0x8fd36a },
+    name: 'Çırak Deresi', icon: 'leaf', par: 85, theme: { wallA: 0xe9776a, wallB: 0xf3a35b, grass: 0x8fd36a },
     segs: [
       { L: 30, turn: 0, slope: -0.03, w: 7, cur: 3.2 },
       { L: 40, turn: 35, slope: -0.04, w: 7, cur: 3.4 },
@@ -16,8 +16,8 @@ export const LEVELS = [
       { L: 40, turn: 0, slope: -0.03, w: 7, cur: 3.4 },
     ],
     objs: [
-      { t: 'hint', s: 2, text: 'Osuran baktığı yöne iter 💨  Geğiren tersine fırlatır 🫧' },
-      { t: 'hint', s: 30, text: 'Hepiniz bir tarafa toplanmayın, sal devrilir! ⚖️' },
+      { t: 'hint', s: 2, text: 'Osuran baktığı yöne iter, geğiren tersine fırlatır!' },
+      { t: 'hint', s: 30, text: 'Hepiniz bir tarafa toplanmayın, sal devrilir!' },
       { t: 'rock', s: 35, u: -3.5, r: 1.2 }, { t: 'rock', s: 48, u: 3.6, r: 1.3 },
       { t: 'bean', s: 55, u: -2 }, { t: 'star', s: 62, u: 2.8 },
       { t: 'arc', s: 82, u: 1.6, r: 3, span: 200, rot: 90, spin: 0 },
@@ -36,7 +36,7 @@ export const LEVELS = [
     ],
   },
   {
-    name: 'Pırtlak Kanyonu', emoji: '🏜️', par: 95, theme: { wallA: 0xd9693f, wallB: 0xf0b260, grass: 0xb8cf62 },
+    name: 'Pırtlak Kanyonu', icon: 'canyon', par: 95, theme: { wallA: 0xd9693f, wallB: 0xf0b260, grass: 0xb8cf62 },
     segs: [
       { L: 25, turn: 0, slope: -0.03, w: 6.5, cur: 3.6 },
       { L: 40, turn: 45, slope: -0.05, w: 6.2, cur: 3.8 },
@@ -49,13 +49,13 @@ export const LEVELS = [
       { L: 40, turn: 30, slope: -0.04, w: 6.5, cur: 3.8 },
     ],
     objs: [
-      { t: 'hint', s: 2, text: 'Girdaplar salı döndürür, dönen salda kenarlara savrulursunuz! 🌀' },
+      { t: 'hint', s: 2, text: 'Girdaplar salı döndürür, dönen salda kenarlara savrulursunuz!' },
       { t: 'log', s: 40, amp: 2.6, speed: 0.96, len: 3.0 },
       { t: 'star', s: 48, u: 0 },
       { t: 'whirl', s: 72, u: -1.6, r: 3.2 },
       { t: 'bean', s: 74, u: 3.5 },
       { t: 'rapids', s: 98, e: 126, amp: 0.33 },
-      { t: 'hint', s: 96, text: 'Akıntı! Dengeyi birlikte koruyun! 🌊' },
+      { t: 'hint', s: 96, text: 'Akıntı! Dengeyi birlikte koruyun!' },
       { t: 'rock', s: 106, u: 2, r: 1.1 }, { t: 'rock', s: 116, u: -2.4, r: 1.2 },
       { t: 'star', s: 120, u: 2.6 },
       { t: 'cp', s: 132 },
@@ -75,7 +75,7 @@ export const LEVELS = [
     ],
   },
   {
-    name: 'Gaz Şelalesi', emoji: '🌊', par: 125, theme: { wallA: 0xc8667a, wallB: 0xe89a6a, grass: 0x7fcf7a },
+    name: 'Gaz Şelalesi', icon: 'waterfall', par: 125, theme: { wallA: 0xc8667a, wallB: 0xe89a6a, grass: 0x7fcf7a },
     segs: [
       { L: 25, turn: 0, slope: -0.03, w: 7, cur: 3.6 },
       { L: 30, turn: 30, slope: -0.05, w: 6.5, cur: 4 },
@@ -91,7 +91,7 @@ export const LEVELS = [
       { L: 40, turn: 0, slope: -0.03, w: 7, cur: 3.4 },
     ],
     objs: [
-      { t: 'hint', s: 2, text: 'Şelaleler geliyor! İnişte sıkı durun, savrulmayın! 😱' },
+      { t: 'hint', s: 2, text: 'Şelaleler geliyor! İnişte sıkı durun, savrulmayın!' },
       { t: 'star', s: 30, u: 3 }, { t: 'bean', s: 42, u: -3 },
       { t: 'star', s: 62, u: 0 },
       { t: 'arc', s: 82, u: -1.6, r: 2.8, span: 200, rot: 90, spin: 0.6 },

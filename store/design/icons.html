@@ -1,0 +1,11 @@
+<!doctype html><html><head><meta charset="utf-8"><title>Simgeler</title>
+<link rel="stylesheet" href="/node_modules/@fontsource/baloo-2/latin-800.css">
+<style>body{margin:0;padding:20px;background:#a8dcff;font-family:'Baloo 2';display:grid;grid-template-columns:repeat(10,110px);gap:12px}
+div{background:#fff;border-radius:18px;padding:8px;text-align:center;font-size:12px;font-weight:800}
+svg{width:72px;height:72px;display:block;margin:0 auto}</style></head><body>
+<script type="module">
+import { ic } from '/src/icons.js';
+const names = ['fart','burp','buoy','star','online','key','help','sound','mute','music','pause','back','next','share','bot','close','rocket','trophy','gold','silver','bronze','timer','water','boom','crown','devil','bolt','sick','people','leaf','canyon','waterfall','again','home','door','check','flag','joystick','spikes','bean','soda','balance','toilet'];
+document.body.innerHTML = names.map(n => `<div>${ic(n)}${n}</div>`).join('');
+document.fonts.ready.then(() => window.done = true);
+</script></body></html>

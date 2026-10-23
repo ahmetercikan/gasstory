@@ -37,8 +37,8 @@
 
   /* 3. ekran */
   .card { left: 2290px; width: 850px; height: 260px; border-radius: 44px; background: rgba(255,255,255,.62); border: 3px solid rgba(255,255,255,.95); box-shadow: 0 24px 50px rgba(20,60,110,.16), inset 0 2px 0 #fff; backdrop-filter: blur(10px); display: flex; align-items: center; gap: 40px; padding: 0 44px; box-sizing: border-box; }
-  .ic { flex: 0 0 140px; height: 140px; border-radius: 50%; background: #fff; box-shadow: 0 0 0 6px #d6ecff, 0 8px 18px rgba(20,60,110,.15); display: flex; align-items: center; justify-content: center; }
-  .ic svg { width: 78px; height: 78px; stroke: var(--accent); stroke-width: 2.4; fill: none; stroke-linecap: round; stroke-linejoin: round; }
+  .icw { flex: 0 0 140px; height: 140px; border-radius: 50%; background: #fff; box-shadow: 0 0 0 6px #d6ecff, 0 8px 18px rgba(20,60,110,.15); display: flex; align-items: center; justify-content: center; }
+  .icw svg { width: 92px; height: 92px; }
   .card h3 { margin: 0; font-size: 60px; font-weight: 800; line-height: 1.05; }
   .card p { margin: 6px 0 0; font-size: 38px; line-height: 1.25; color: var(--soft); font-weight: 500; }
   .dash { height: 0; border-top: 7px dashed var(--accent); opacity: .85; }
@@ -73,16 +73,17 @@
   <div class="abs dash" style="left:1765px;top:1427px;width:525px"></div><div class="abs dot" style="left:2273px;top:1414px"></div>
 
   <div class="abs card" style="top:660px">
-    <div class="ic"><svg viewBox="0 0 24 24"><path d="M7 15a4 4 0 1 1 1.2-7.8A5 5 0 0 1 17.6 9 3.5 3.5 0 1 1 17 16H8"/><path d="M3 19h7M5 22h5"/></svg></div>
+    <div class="icw" data-i="fart"></div>
     <div><h3>Osur ya da Geğir</h3><p>Osuran baktığı yöne iter, geğiren salı geriye fırlatır.</p></div>
   </div>
   <div class="abs card" style="top:980px">
-    <div class="ic"><svg viewBox="0 0 24 24"><path d="M12 3v18M7 21h10M4 7h16"/><path d="M6 7l-3 7a3 3 0 0 0 6 0zM18 7l-3 7a3 3 0 0 0 6 0z"/></svg></div>
+    <div class="icw" data-i="balance"></div>
     <div><h3>Dengede Kalın</h3><p>Herkes bir kenara toplanırsa sal yatar, devrilirsiniz!</p></div>
   </div>
   <div class="abs card" style="top:1300px">
-    <div class="ic"><svg viewBox="0 0 24 24"><circle cx="9" cy="8" r="3.2"/><path d="M3 20a6 6 0 0 1 12 0"/><circle cx="17" cy="9" r="2.6"/><path d="M15.5 14.2A5 5 0 0 1 21 19"/></svg></div>
+    <div class="icw" data-i="people"></div>
     <div><h3>4 Kişi Online</h3><p>Oda kur, kodu paylaş, arkadaşlarınla aynı salda buluş.</p></div>
   </div>
-  <script>document.fonts.ready.then(() => Promise.all([...document.images].map((i) => i.decode().catch(() => {})))).then(() => (window.done = true));</script>
+  <script type="module">import { ic } from '/src/icons.js'; document.querySelectorAll('[data-i]').forEach((el) => (el.innerHTML = ic(el.dataset.i)));</script>
+  <script>document.fonts.ready.then(() => Promise.all([...document.images].map((i) => i.decode().catch(() => {})))).then(() => setTimeout(() => (window.done = true), 400));</script>
 </body></html>

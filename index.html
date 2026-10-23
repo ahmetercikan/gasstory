@@ -19,10 +19,10 @@
     <div class="hud-top">
       <div class="pill" id="hHearts"></div>
       <div class="pill mono" id="hTime">0:00</div>
-      <div class="pill" id="hStars">⭐ 0/0</div>
-      <button class="pill icon" id="pauseBtn" aria-label="Duraklat">⏸</button>
+      <div class="pill" id="hStars">0/0</div>
+      <button class="pill icon" id="pauseBtn" aria-label="Duraklat"><i data-ic="pause"></i></button>
     </div>
-    <div id="progress"><div id="progFill"></div><div id="progCps"></div><div id="progRaft">🛟</div><div id="progFlag">🏁</div></div>
+    <div id="progress"><div id="progFill"></div><div id="progCps"></div><div id="progRaft"><i data-ic="buoy"></i></div><div id="progFlag"><i data-ic="flag"></i></div></div>
     <div id="team"></div>
     <div id="tiltGauge"><div class="warn"></div><div id="tiltDot"></div><span>DENGE</span></div>
     <div id="banner"></div>
@@ -30,7 +30,7 @@
     <div id="joyZone"><div id="joyBase"><div id="joyKnob"></div></div><div class="joyHelp">Sürükle: salın üstünde yürü</div></div>
     <button id="gasBtn" aria-label="Gaz">
       <svg viewBox="0 0 100 100"><circle cx="50" cy="50" r="45" class="track" /><circle cx="50" cy="50" r="45" class="fill" id="gasRing" /></svg>
-      <span id="gasEmoji">💨</span><b id="gasLabel">OSUR</b>
+      <span id="gasEmoji"><i data-ic="fart"></i></span><b id="gasLabel">OSUR</b>
     </button>
   </div>
 
@@ -40,7 +40,7 @@
       <div class="logo">
         <div class="logo-top">GAS</div>
         <div class="logo-bot">STORY</div>
-        <div class="logo-sub">💨 Pırrt! Böğğ! Dostluk bozan rafting macerası 🫧</div>
+        <div class="logo-sub">Pırrt! Böğğ! Dostluk bozan rafting macerası</div>
       </div>
       <div class="card">
         <label class="lbl">Adın</label>
@@ -51,10 +51,10 @@
         <div id="powPick" class="pow-pick"></div>
         <div id="powDesc" class="pow-desc"></div>
       </div>
-      <button class="btn big primary" id="soloBtn">🛟 Tek Başına Oyna <small>botlarla</small></button>
+      <button class="btn big primary" id="soloBtn"><span><i data-ic="buoy"></i> Tek Başına Oyna</span><small>botlarla</small></button>
       <div class="row">
-        <button class="btn" id="hostBtn">📡 Oda Kur</button>
-        <button class="btn" id="joinOpen">🔑 Odaya Katıl</button>
+        <button class="btn" id="hostBtn"><span><i data-ic="online"></i> Oda Kur</span></button>
+        <button class="btn" id="joinOpen"><span><i data-ic="key"></i> Odaya Katıl</span></button>
       </div>
       <div id="joinBox" class="card hidden">
         <label class="lbl">Arkadaşının oda kodu</label>
@@ -64,9 +64,9 @@
         </div>
       </div>
       <div class="row small">
-        <button class="btn ghost" id="howBtn">❓ Nasıl Oynanır</button>
-        <button class="btn ghost" id="sndBtn">🔊</button>
-        <button class="btn ghost" id="musBtn">🎵</button>
+        <button class="btn ghost" id="howBtn"><span><i data-ic="help"></i> Nasıl Oynanır</span></button>
+        <button class="btn ghost" id="sndBtn"><i data-ic="sound"></i></button>
+        <button class="btn ghost" id="musBtn"><i data-ic="music"></i></button>
       </div>
     </div>
   </div>
@@ -75,12 +75,12 @@
   <div id="lobby" class="screen hidden">
     <div class="menu-inner">
       <div class="lobby-head">
-        <button class="btn ghost icon" id="lobbyBack">←</button>
+        <button class="btn ghost icon" id="lobbyBack"><i data-ic="back"></i></button>
         <div id="roomBox">
           <div class="lbl" id="roomLbl">ODA KODU</div>
           <div id="roomCode">----</div>
         </div>
-        <button class="btn ghost icon" id="shareBtn">📤</button>
+        <button class="btn ghost icon" id="shareBtn"><i data-ic="share"></i></button>
       </div>
       <div id="roomHelp" class="muted center"></div>
       <div id="roster"></div>
@@ -88,7 +88,7 @@
         <div class="lbl">Bölüm</div>
         <div id="levels"></div>
       </div>
-      <button class="btn big primary" id="startBtn">🚀 BAŞLA</button>
+      <button class="btn big primary" id="startBtn"><span><i data-ic="rocket"></i> BAŞLA</span></button>
       <div id="waitHost" class="muted center hidden">Oda kurucusu oyunu başlatınca başlayacak…</div>
     </div>
   </div>
@@ -96,15 +96,15 @@
   <!-- SONUÇ -->
   <div id="results" class="screen hidden">
     <div class="menu-inner">
-      <div id="resTitle" class="res-title">BİTİŞ! 🏁</div>
-      <div id="resMedal" class="res-medal">🥇</div>
+      <div id="resTitle" class="res-title">BİTİŞ!</div>
+      <div id="resMedal" class="res-medal"><i data-ic="gold"></i></div>
       <div id="resStats" class="card stats"></div>
       <div id="resAwards" class="awards"></div>
       <div id="resBtns">
-        <button class="btn big primary" id="nextBtn">Sonraki Bölüm ➜</button>
+        <button class="btn big primary" id="nextBtn">Sonraki Bölüm</button>
         <div class="row">
-          <button class="btn" id="againBtn">🔁 Tekrar</button>
-          <button class="btn" id="toLobbyBtn">👥 Lobi</button>
+          <button class="btn" id="againBtn"><span><i data-ic="again"></i> Tekrar</span></button>
+          <button class="btn" id="toLobbyBtn"><span><i data-ic="people"></i> Lobi</span></button>
         </div>
       </div>
       <div id="resWait" class="muted center hidden">Oda kurucusunun seçimi bekleniyor…</div>
@@ -114,13 +114,13 @@
   <!-- DURAKLAT -->
   <div id="pause" class="screen hidden dim">
     <div class="menu-inner narrow">
-      <div class="res-title">Mola 🧻</div>
+      <div class="res-title">Mola</div>
       <button class="btn big primary" id="resumeBtn">▶ Devam</button>
-      <button class="btn" id="restartBtn">🔁 Baştan</button>
-      <button class="btn" id="quitBtn">🏠 Lobiye Dön</button>
+      <button class="btn" id="restartBtn"><span><i data-ic="again"></i> Baştan</span></button>
+      <button class="btn" id="quitBtn"><span><i data-ic="home"></i> Lobiye Dön</span></button>
       <div class="row small">
-        <button class="btn ghost" id="sndBtn2">🔊</button>
-        <button class="btn ghost" id="musBtn2">🎵</button>
+        <button class="btn ghost" id="sndBtn2"><i data-ic="sound"></i></button>
+        <button class="btn ghost" id="musBtn2"><i data-ic="music"></i></button>
       </div>
     </div>
   </div>
@@ -130,21 +130,21 @@
     <div class="menu-inner narrow">
       <div class="res-title">Nasıl Oynanır?</div>
       <div class="card how">
-        <p>🛟 Hepiniz aynı şişme saldasınız. Amaç: nehrin sonundaki <b>🏁 bitişe</b> salı patlatmadan ulaşmak.</p>
-        <p>🕹️ <b>Sol tarafa dokunup sürükle</b>: salın üstünde yürü. <b>Sağdaki büyük düğme</b>: gaz!</p>
-        <p>💨 <b>Osuran</b>: basılı tutunca sürekli iter. Sal, <b>baktığın yöne</b> gider.</p>
-        <p>🫧 <b>Geğiren</b>: basılı tut, şişir, bırak! Dev bir patlama salı <b>arkana</b> fırlatır. Önündeki arkadaşını da uçurur 😈</p>
-        <p>⚖️ <b>Denge</b>: herkes bir kenara toplanırsa sal yatar, kayıp suya düşersiniz. Çok yatarsa sal <b>devrilir</b>!</p>
-        <p>🌵 Dikenler salı deler (3 can). Kayalar sektirir, girdaplar döndürür.</p>
-        <p>🥫 Fasulye osuranları, 🥤 gazoz geğirenleri süper yapar. ⭐ yıldızları topla!</p>
-        <p>🏊 Suya düşersen yüzerek sala dön; yetişemezsen arkadaşların seni çeker.</p>
+        <p><i data-ic="buoy"></i> Hepiniz aynı şişme saldasınız. Amaç: nehrin sonundaki <b>bitişe</b> salı patlatmadan ulaşmak.</p>
+        <p><i data-ic="joystick"></i> <b>Sol tarafa dokunup sürükle</b>: salın üstünde yürü. <b>Sağdaki büyük düğme</b>: gaz!</p>
+        <p><i data-ic="fart"></i> <b>Osuran</b>: basılı tutunca sürekli iter. Sal, <b>baktığın yöne</b> gider.</p>
+        <p><i data-ic="burp"></i> <b>Geğiren</b>: basılı tut, şişir, bırak! Dev bir patlama salı <b>arkana</b> fırlatır. Önündeki arkadaşını da uçurur!</p>
+        <p><i data-ic="balance"></i> <b>Denge</b>: herkes bir kenara toplanırsa sal yatar, kayıp suya düşersiniz. Çok yatarsa sal <b>devrilir</b>!</p>
+        <p><i data-ic="spikes"></i> Dikenler salı deler (3 can). Kayalar sektirir, girdaplar döndürür.</p>
+        <p><i data-ic="bean"></i> Fasulye osuranları, gazoz geğirenleri süper yapar. Yıldızları topla!</p>
+        <p><i data-ic="water"></i> Suya düşersen yüzerek sala dön; yetişemezsen arkadaşların seni çeker.</p>
       </div>
       <button class="btn big primary" id="howClose">Anladım!</button>
     </div>
   </div>
 
   <div id="toast"></div>
-  <div id="loading"><div class="spin">💨</div></div>
+  <div id="loading"><div class="spin"><img src="./img/char-frog.png" alt=""></div></div>
   <script type="module" src="./src/main.js"></script>
 </body>
 </html>
