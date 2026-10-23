@@ -41,8 +41,8 @@
   `android/app/build.gradle` → `versionCode` +1. Mağaza metinleri ve form cevapları: `store/play-metin.md`.
 - **iOS / TestFlight:** `ios/` (Capacitor, Swift Package Manager; CocoaPods yok), paket kimliği Android ile aynı, yalnız
   iPhone. `npm run ios` Xcode'da açar; `npm run ipa` arşivleyip TestFlight'a yükler (`scripts/ios-testflight.sh`).
-  Anahtarlar proje dışında `~/.gasstory-ios.env` (TEAM_ID + App Store Connect API anahtarı .p8), git'e girmez. Yapı
-  numarası tarih-saatten otomatik; sürüm adı `project.pbxproj` → `MARKETING_VERSION`. AdMob iOS şimdilik Google deneme
+  İmza bu Mac'teki Xcode hesabıyla otomatik (ekip `AQ2Y664A4Z`), API anahtarı gerekmez. İlk TestFlight yüklemesi
+  23 Ekim 2026, yapı 2610232255. Yapı numarası tarih-saatten otomatik; sürüm adı `project.pbxproj` → `MARKETING_VERSION`. AdMob iOS şimdilik Google deneme
   kimliği: gerçeği açılınca `Info.plist` → `GADApplicationIdentifier` ve `src/ads.js` iOS birimi değişmeli.
 - **Mağaza görselleri:** kullanıcının verdiği örnek tasarım (Calemio) düzeninde kesintisiz 3'lü panorama:
   `store/design/panorama.html` (1: maskot + başlık, 2: logo + eğik telefon, 3: kesik çizgili özellik kartları).
