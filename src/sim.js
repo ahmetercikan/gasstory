@@ -8,7 +8,6 @@ export const RIM_R = 1.98;      // karakterlerin durduğu simit çemberi
 const RAFT_MASS = 2.2, TILT_MASS = 1.25;
 const FART_F = 11, DRAG = 0.9, TORQUE_K = 0.45;
 const TURN_SPEED = 2.5;         // kenarda dönme hızı (rad/sn)
-const MIN_GAP = 0.62;           // iki karakter arası en az açı
 const SLIP_TILT = 0.8;          // sal bu kadar yatınca alçak taraftakiler kayar
 const MAX_HP = 3;
 // Yerel açı a: konum (cos a, sin a)·R. Yerel ileri (0,-1) → a = -π/2, arka (0,1) → a = π/2.
@@ -181,16 +180,8 @@ export class Sim {
         }
       }
     }
-    // Kenarda birbirinin içinden geçmesinler
-    const onNow = on.filter((p) => p.onRaft);
-    for (let it = 0; it < 2; it++) for (let i = 0; i < onNow.length; i++) for (let j = i + 1; j < onNow.length; j++) {
-      const a = onNow[i], b = onNow[j], d = angDiff(a.ang, b.ang);
-      if (Math.abs(d) < MIN_GAP) {
-        const push = (MIN_GAP - Math.abs(d)) / 2 * Math.sign(d || 1);
-        a.ang -= push; b.ang += push;
-      }
-    }
-    for (const p of onNow) this.placeOnRim(p);
+    // Karakterler kenarda birbirinin içinden geçebilir, üst üste durabilir
+    for (const p of on) if (p.onRaft) this.placeOnRim(p);
     return { fx, fz, tq: 0 };
   }
 
