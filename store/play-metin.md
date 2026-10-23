@@ -9,33 +9,33 @@ Play Console'a kopyala-yapıştır için. Görseller: `store/play/`.
 **Kısa açıklama** (en çok 80):
 `Osur, geğir, dengede kal! Arkadaşlarınla 1-4 kişilik dostluk bozan rafting.`
 
-**Tam açıklama:**
+**Tam açıklama:** (emojisiz; Play Console'a girilen hali)
 
 ```
-Hepiniz aynı şişme saldasınız ve tek bir sorununuz var: kürek yok! 💨
+Hepiniz aynı şişme saldasınız ve tek bir sorununuz var: kürek yok!
 
 Gas Story'de salı OSURARAK ya da GEĞİREREK itiyorsunuz. Kıvrılan bir nehirden aşağı inerken dikenlerin, girdapların ve şelalelerin arasından birlikte geçmeye çalışın.
 
-💨 OSURMA: Düğmeyi basılı tut, sal baktığın yöne gider.
-🫧 GEĞİRME: Basılı tut, şişir, bırak! Dev bir patlama salı arkana fırlatır. Önündeki arkadaşını da suya uçurur 😈
+OSURMA: Düğmeyi basılı tut, sal baktığın yöne gider.
+GEĞİRME: Basılı tut, şişir, bırak! Dev bir patlama salı arkana fırlatır. Önündeki arkadaşını da suya uçurur.
 
-⚖️ DENGE HER ŞEY
+DENGE HER ŞEY
 Herkes salın bir kenarına toplanırsa sal yatar, kayıp suya düşersiniz. Çok yatarsa sal tamamen devrilir! Birlikte hareket edin, birbirinizi dengeleyin.
 
-👥 1-4 KİŞİ CO-OP
+1-4 KİŞİ CO-OP
 • Odayı kur, 4 harfli kodu paylaş, arkadaşların kendi telefonlarından katılsın.
 • Tek başına mı? Sorun değil: akıllı botlar takım arkadaşın olur ve salı seninle dengeler.
 
-🌊 3 BÖLÜM
+3 BÖLÜM
 • Çırak Deresi: dikenli halkalar ve kayalar
 • Pırtlak Kanyonu: kayan dikenli kütükler, girdaplar, sert akıntılar
 • Gaz Şelalesi: şelalelerden aşağı düşüş, dönen dikenli çubuklar
 
-⭐ Yıldızları topla, rekorunu kır. 🥫 Fasulye osuranları, 🥤 gazoz geğirenleri süper güçlü yapar!
+Yıldızları topla, rekorunu kır. Fasulye osuranları, gazoz geğirenleri süper güçlü yapar!
 
-🏆 Bölüm sonunda ödüller: Gaz Kralı, Su Perisi ve Dostluk Bozan kim olacak?
+Bölüm sonunda ödüller: Gaz Kralı, Su Perisi ve Dostluk Bozan kim olacak?
 
-🐸🦛🐧🐻 4 sevimli karakter: Kurbağa, Su Aygırı, Penguen ve Ayı.
+4 sevimli karakter: Kurbağa, Su Aygırı, Penguen ve Ayı.
 
 Reklam yok, hesap yok. Sadece gaz.
 ```
@@ -81,3 +81,14 @@ Yeniden üretmek: `npm run dev` açıkken `node scripts/store-panorama.mjs`.
 - Dosya: `android/app/build/outputs/bundle/release/app-release.aab`
 - **Sürüm notu:** `İlk sürüm: 3 bölüm, 4 karakter, osurma ve geğirme, 1-4 kişi online co-op ve botlar.`
 - İlk yüklemede **Play App Signing**'i kabul et (asıl anahtarı Google saklar).
+
+## Durum (23 Ekim 2026)
+
+- Play Console'da uygulama oluşturuldu (KingSmile Studios, uygulama kimliği `4974293839289811937`).
+- Doldurulanlar: gizlilik politikası, uygulama erişimi (kısıtlama yok), reklam yok, hedef kitle 13+,
+  veri güvenliği (veri toplanmıyor/paylaşılmıyor), içerik derecelendirme (kaba mizah: geğirme/gaz sesleri ve
+  gaz bulutu → IARC 3+, ESRB E), reklam kimliği yok, resmi kurum değil, finans/sağlık özelliği yok,
+  kategori Gündelik, iletişim e-postası, mağaza girişi (metinler + simge + tanıtım görseli + 3 panorama ekranı).
+- Mağaza öğeleri için yapay zekâ beyanı: "etiketleme" (görseller oyunun kendi çizimleri; kullanıcı kararı).
+- Üretim sürümü 1 (1.0.0), 178 ülke, tam kullanıma sunma. Yönetilen yayın kapalı → onaylanınca otomatik yayına girer.
+- İncelemeye gönderildi. Not: Play "tanıtımlardan yararlanmak için en az 4 ekran görüntüsü" öneriyor; şu an 3 var.
